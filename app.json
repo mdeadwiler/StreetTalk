@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "BlockStreet-Mobile",
-    "slug": "BlockStreet-Mobile",
+    "name": "StreetTalk",
+    "slug": "streettalk",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
