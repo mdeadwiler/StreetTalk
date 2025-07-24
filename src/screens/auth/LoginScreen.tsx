@@ -8,13 +8,31 @@ export default function LoginScreen({ navigation}: LoginScreenProps) {
 const [email, setEmail] = useState('')
 const [password, setPassword] = useState('')
 
-const handleLogin = () => {
+const handleLogin = async (): Promise<void> => {
     if (!email || !password) {
         Alert.alert('Error', 'Please fill in all fields')
         return
     }
-    // TODO: login Logic
-    console.log('Login attempt'), {email, password}
+    
+    if (!email.includes('@')) {
+        Alert.alert('Error', 'Please enter a valid email address')
+        return
+    }
+    
+    try {
+        // TODO: Replace with actual authentication service
+        console.log('Login attempt:', { email, password })
+        
+        // Going to add firebase before finishing login logic
+        // const response = await authService.login({ email, password })
+        // if (response.success) {
+        //   navigation.navigate('Feed')
+        // }
+        
+    } catch (error) {
+        console.error('Login error:', error)
+        Alert.alert('Error', 'Login failed. Please try again.')
+    }
 }
 
 const navigateToRegister = () => {
