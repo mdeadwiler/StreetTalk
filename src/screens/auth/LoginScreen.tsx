@@ -52,7 +52,8 @@ const handleLogin = async (): Promise<void> => {
 }
 
 const navigateToRegister = () => {
-    navigation.navigate('Register')
+    // navigation.navigate('Register') // Register screen not implemented yet
+    console.log('Register not implemented yet')
 }
 
 
