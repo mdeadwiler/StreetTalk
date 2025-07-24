@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { auth } from '../../utils/firebaseConfig'
 
 type LoginScreenProps = NativeStackScreenProps<any, 'Login'>
 
@@ -20,18 +22,32 @@ const handleLogin = async (): Promise<void> => {
     }
     
     try {
-        // TODO: Replace with actual authentication service
-        console.log('Login attempt:', { email, password })
+        const userCredential = await signInWithEmailAndPassword(auth, email, password)
+        const user = userCredential.user
         
-        // Going to add firebase before finishing login logic
-        // const response = await authService.login({ email, password })
-        // if (response.success) {
-        //   navigation.navigate('Feed')
-        // }
+        console.log('Login successful:', user.uid)
+        Alert.alert('Success', 'Login successful!')
         
-    } catch (error) {
+        // Navigate to Home Screen
+        navigation.navigate('Feed')
+        
+    } catch (error: any) {
         console.error('Login error:', error)
-        Alert.alert('Error', 'Login failed. Please try again.')
+        
+        // Handle specific Firebase auth errors
+        let errorMessage = 'Login failed. Please try again.'
+        
+        if (error.code === 'auth/user-not-found') {
+            errorMessage = 'No account found with this email.'
+        } else if (error.code === 'auth/wrong-password') {
+            errorMessage = 'Incorrect password.'
+        } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Invalid email address.'
+        } else if (error.code === 'auth/too-many-requests') {
+            errorMessage = 'Too many failed attempts. Try again later.'
+        }
+        
+        Alert.alert('Error', errorMessage)
     }
 }
 
