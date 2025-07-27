@@ -28,7 +28,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleLogin = async (): Promise<void> => {
+  const handleRegister = async (): Promise<void> => {
     if (!email || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill in all fields");
       return;
@@ -96,7 +96,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           onChangeText={setConfirmPassword}
           secureTextEntry={true}
         />
-        <TouchableOpacity style={styles.registerButton} onPress={handleLogin}>
+        <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
           <Text style={styles.registerButtonText}>Register</Text>
         </TouchableOpacity>
         {/* This will be added after home page is done */}
