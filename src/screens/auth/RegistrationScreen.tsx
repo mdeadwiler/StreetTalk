@@ -32,5 +32,17 @@ export default function RegisterScreen({ navigation}: RegisterScreenProps ){
             Alert.alert('Error', 'Passwords do not match')
             return
         }
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+            const user = userCredential.user
+            // This is a check to see if the user is logged in
+            console.log('Login successful:', user.uid)
+            Alert.alert('Success', 'Login successful')
+            navigation.navigate('Feed', { userId: user.uid})
+        } catch (error: any) {
+            console.log('Login Error', error)
+        }
+        // Have to set if else statements
     }
 }
