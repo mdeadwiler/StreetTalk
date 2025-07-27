@@ -39,10 +39,94 @@ export default function RegisterScreen({ navigation}: RegisterScreenProps ){
             // This is a check to see if the user is logged in
             console.log('Login successful:', user.uid)
             Alert.alert('Success', 'Login successful')
+
             navigation.navigate('Feed', { userId: user.uid})
+
         } catch (error: any) {
             console.log('Login Error', error)
         }
-        // Have to set if else statements
+        
+        let errorMessage = 'Login Failes. Please try again.'
+
+        if (errorMessage === 'auth/email-already-in-use') {
+            errorMessage = 'This email already in use'
+        } else if (errorMessage === 'auth/invalid-email') {
+            errorMessage= 'Invalid email address'
+        } else if (errorMessage === 'auth/weak-password') {
+            errorMessage = 'This is password should be at least 12 characters'
+        }
+         Alert.alert('Error', errorMessage)
     }
+    return (
+        <View style={styles.container}>
+            <Text style={styles.title}>Register</Text>
+            <View style={styles.form}>
+                <TextInput
+                style={styles.input}
+                placeholder='Email'
+                value={email}
+                onChangeText={setEmail}
+                keyboardType='email-address'
+                autoCapitalize='none'
+                />
+                <TextInput
+                style={styles.input}
+                placeholder='Password'
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={true}
+                />
+                <TextInput
+                style={styles.input}
+                placeholder='confirmPassword'
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={true}
+                />
+                <TouchableOpacity style={styles.registerButtonText} onPress={handleLogin}>
+                    <Text style={styles.registerButtonText}>Register</Text>
+                </TouchableOpacity>
+        </View>
+    )
 }
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#000000',
+        padding: 20,
+        justifyContent: 'center'
+    },
+    title: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        color: '#4b0082',
+    },
+    form: {
+        width: '100%',
+        // alignItems: 'center', 
+        // justifyContent: 'center',
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: '#fffaf0',
+        padding: 15,
+        borderRadius: 8,
+        marginBottom: 15,
+        fontSize: 16,
+    },
+    registerButton: {
+    backgroundColor: '#4b0082',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  registerButtonText: {
+    color: '#fffaf0',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  
+
+})
