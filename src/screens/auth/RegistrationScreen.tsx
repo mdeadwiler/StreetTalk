@@ -99,9 +99,9 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
           <Text style={styles.registerButtonText}>Register</Text>
         </TouchableOpacity>
-        {/* This will be added after home page is done */}
-        {/* <TouchableOpacity onPress={navigateToRegister}>
-                                <Text style={styles.linkText}>Don't have an account? Sign up</Text>
+        {/* This will be added after home page is done. But I dont think I need this. TBD*/}
+        {/* <TouchableOpacity onPress={navigateToHome}>
+                                <Text style={styles.linkText}>Home</Text>
                             </TouchableOpacity> */}
       </View>
     </View>
