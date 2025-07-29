@@ -3,8 +3,13 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../../utils/firebaseConfig'
+type RootStackParamList = {
+  Login: undefined;
+  Register: undefined;
+  Feed: { userId: string };
+};
 
-type LoginScreenProps = NativeStackScreenProps<any, 'Login'>
+type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>
 
 export default function LoginScreen({ navigation}: LoginScreenProps) {
 const [email, setEmail] = useState('')
@@ -28,8 +33,8 @@ const handleLogin = async (): Promise<void> => {
         console.log('Login successful:', user.uid)
         Alert.alert('Success', 'Login successful!')
         
-        // Navigate to Home Screen
-        navigation.navigate('Feed')
+        // Navigate to Feed Screen with user ID
+        navigation.navigate('Feed', { userId: user.uid })
         
     } catch (error: any) {
         console.error('Login error:', error)
@@ -109,8 +114,8 @@ const styles = StyleSheet.create({
     },
     form: {
         width: '100%',
-        // alignItems: 'center', 
-        // justifyContent: 'center',
+        alignItems: 'center', 
+        justifyContent: 'center',
     },
     input: {
         borderWidth: 1,

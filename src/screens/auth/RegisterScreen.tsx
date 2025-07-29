@@ -12,14 +12,14 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../utils/firebaseConfig";
 
-type AuthStackParamList = {
-  Login: { userId: string };
-  Register: { userId: string };
+type RootStackParamList = {
+  Login: undefined;
+  Register: undefined;
   Feed: { userId: string };
 };
 
 type RegisterScreenProps = NativeStackScreenProps<
-  AuthStackParamList,
+  RootStackParamList,
   "Register"
 >;
 
@@ -56,19 +56,19 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
 
       navigation.navigate("Feed", { userId: user.uid });
     } catch (error: any) {
-      console.log("Login Error", error);
-    }
+      console.log("Registration Error", error);
+      
+      let errorMessage = "Registration failed. Please try again.";
 
-    let errorMessage = "Login Failes. Please try again.";
-
-    if (errorMessage === "auth/email-already-in-use") {
-      errorMessage = "This email already in use";
-    } else if (errorMessage === "auth/invalid-email") {
-      errorMessage = "Invalid email address";
-    } else if (errorMessage === "auth/weak-password") {
-      errorMessage = "This is password should be at least 12 characters";
+      if (error.code === "auth/email-already-in-use") {
+        errorMessage = "This email is already in use";
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Invalid email address";
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = "Password should be at least 6 characters";
+      }
+      Alert.alert("Error", errorMessage);
     }
-    Alert.alert("Error", errorMessage);
   };
   return (
     <View style={styles.container}>
@@ -99,10 +99,9 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
           <Text style={styles.registerButtonText}>Register</Text>
         </TouchableOpacity>
-        {/* This will be added after home page is done. But I dont think I need this. TBD*/}
-        {/* <TouchableOpacity onPress={navigateToHome}>
-                                <Text style={styles.linkText}>Home</Text>
-                            </TouchableOpacity> */}
+        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <Text style={styles.linkText}>Already have an account? Login</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -144,5 +143,11 @@ const styles = StyleSheet.create({
     color: "#fffaf0",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  linkText: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#fffaf0',
+    fontSize: 16,
   },
 });
