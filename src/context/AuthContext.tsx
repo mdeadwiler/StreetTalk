@@ -23,4 +23,16 @@ export const AuthProvider = ({ children }: { children: ReactNode}) => {
   })
     return unsuscribe
   }, [])
+
+  const login = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password)
+  }
+
+  const register = async (email: string, password: string) => {
+    await createUserWithEmailAndPassword(auth, email, password)
+  }
+
+  const logout = async() => {
+    await signOut(auth)
+  }
 }
