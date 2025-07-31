@@ -1,5 +1,21 @@
 // Core types for the BlockStreet app
 
+// Navigation types
+export type RootStackParamList = {
+  Login: undefined;
+  Register: undefined;
+  Feed: { userId: string };
+};
+
+// Auth types
+export type AuthContextType = {
+  user: import('firebase/auth').User | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+};
+
 export interface User {
   id: string;
   anonymousName: string;

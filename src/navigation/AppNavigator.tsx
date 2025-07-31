@@ -1,14 +1,17 @@
 import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import LoginScreen from '../screens/auth/LoginScreen'
-import FeedScreen from '../screens/FeedScreen'
+import RegisterScreen from '../screens/auth/RegisterScreen'
+import FeedScreen from '../screens/feed/FeedScreen'
 import { useAuth } from '../context/AuthContext'
-import { ActivityIndicator, View} from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
+import { RootStackParamList } from '.././types';
 
 
-const Stack = createNativeStackNavigator()
 
-export const AppNavigato = () => {
+const Stack = createNativeStackNavigator<RootStackParamList>()
+
+export const AppNavigator = () => {
     const { user, loading } = useAuth()
 
     if (loading) {
@@ -22,12 +25,17 @@ export const AppNavigato = () => {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             {user ? (
-                <Stack.Screen name='Feed' component={FeedScreen} />
+                <Stack.Screen name='Feed' component={FeedScreen} initialParams={{ userId: user.uid }} />
             ) : ( 
-                <Stack.Screen name='Login' component={LoginScreen} />
+                <>
+                    <Stack.Screen name='Login' component={LoginScreen} />
+                    <Stack.Screen name='Register' component={RegisterScreen} />
+                </>
             )}
         </Stack.Navigator>
     )
 }
+
+
 
 

@@ -3,11 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../../utils/firebaseConfig'
-type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
-  Feed: { userId: string };
-};
+import { RootStackParamList } from '../../types';
+
 
 type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>
 

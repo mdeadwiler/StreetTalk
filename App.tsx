@@ -5,13 +5,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, Text, View } from 'react-native';
 import LoginScreen from './src/screens/auth/LoginScreen';
 import RegisterScreen from './src/screens/auth/RegisterScreen';
+import { RootStackParamList } from './src/types';
 
 
-type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
-  Feed: { userId: string };
-};
+
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

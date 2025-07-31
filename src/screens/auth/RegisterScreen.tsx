@@ -11,12 +11,8 @@ import {
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../utils/firebaseConfig";
+import { RootStackParamList } from '../../types';
 
-type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
-  Feed: { userId: string };
-};
 
 type RegisterScreenProps = NativeStackScreenProps<
   RootStackParamList,
