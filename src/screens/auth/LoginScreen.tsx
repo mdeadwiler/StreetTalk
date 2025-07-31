@@ -4,7 +4,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useAuth } from '../../context/AuthContext'
 import { RootStackParamList } from '../../types'
 import { authStyles } from '../../styles/authStyles'
-import { validateEmail, validatePassword, getFirebaseErrorMessage } from '../../utils/validation';
+import { validateLoginForm, getZodErrorMessage, getFirebaseErrorMessage } from '../../utils/zod';
 
 
 type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>
@@ -16,15 +16,9 @@ const [password, setPassword] = useState('')
 const { login } = useAuth()
 
 const handleLogin = async (): Promise<void> => {
-    const emailError = validateEmail(email);
-    if (emailError) {
-        Alert.alert('Error', emailError);
-        return;
-    }
-    
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-        Alert.alert('Error', passwordError);
+    const result = validateLoginForm({ email, password });
+    if (!result.success) {
+        Alert.alert('Error', getZodErrorMessage(result.error));
         return;
     }
     

@@ -10,7 +10,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../../context/AuthContext";
 import { RootStackParamList } from '../../types';
 import { authStyles } from '../../styles/authStyles';
-import { validateEmail, validatePassword, validatePasswordMatch, getFirebaseErrorMessage } from '../../utils/validation';
+import { validateRegisterForm, getZodErrorMessage, getFirebaseErrorMessage } from '../../utils/zod';
 
 
 type RegisterScreenProps = NativeStackScreenProps<
@@ -26,21 +26,9 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const { register } = useAuth();
 
   const handleRegister = async (): Promise<void> => {
-    const emailError = validateEmail(email);
-    if (emailError) {
-      Alert.alert("Error", emailError);
-      return;
-    }
-
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      Alert.alert("Error", passwordError);
-      return;
-    }
-
-    const passwordMatchError = validatePasswordMatch(password, confirmPassword);
-    if (passwordMatchError) {
-      Alert.alert("Error", passwordMatchError);
+    const result = validateRegisterForm({ email, password, confirmPassword });
+    if (!result.success) {
+      Alert.alert("Error", getZodErrorMessage(result.error));
       return;
     }
 

@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../utils/firebaseConfig';
+import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList } from '../../types';
 
 
@@ -10,11 +9,12 @@ type FeedScreenProps = NativeStackScreenProps<RootStackParamList, 'Feed'>;
 
 export default function FeedScreen({ route }: FeedScreenProps) {
   const { userId } = route.params;
+  const { logout } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      console.log('User logged out successfully');
+      await logout();
+      // Navigation happens automatically via AuthContext + AppNavigator
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -65,7 +65,7 @@ export default function FeedScreen({ route }: FeedScreenProps) {
 
       {/* Create Post Button */}
       <TouchableOpacity style={styles.createPostButton}>
-        <Text style={styles.createPostText}>+ New Post</Text>
+        <Text style={styles.createPostText}>Post</Text>
       </TouchableOpacity>
     </View>
   );
