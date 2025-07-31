@@ -5,7 +5,7 @@ import RegisterScreen from '../screens/auth/RegisterScreen'
 import FeedScreen from '../screens/feed/FeedScreen'
 import { useAuth } from '../context/AuthContext'
 import { ActivityIndicator, View } from 'react-native'
-import { RootStackParamList } from '.././types';
+import { RootStackParamList } from '../types';
 
 
 
