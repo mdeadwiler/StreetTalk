@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-// UI Components
 import {
   View,
   Text,
@@ -9,8 +8,7 @@ import {
   Alert,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../utils/firebaseConfig";
+import { useAuth } from "../../context/AuthContext";
 import { RootStackParamList } from '../../types';
 
 
@@ -23,6 +21,8 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  const { register } = useAuth();
 
   const handleRegister = async (): Promise<void> => {
     if (!email || !password || !confirmPassword) {
@@ -40,17 +40,9 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredential.user;
-      // This is a check to see if the user is logged in
-      console.log("Login successful:", user.uid);
-      Alert.alert("Success", "Login successful");
-
-      navigation.navigate("Feed", { userId: user.uid });
+      await register(email, password);
+      // Navigation happens automatically via AuthContext and AppNavigator
+      
     } catch (error: any) {
       console.log("Registration Error", error);
       
@@ -105,7 +97,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000000ff",
+    backgroundColor: "#000000",
     padding: 20,
     justifyContent: "center",
   },

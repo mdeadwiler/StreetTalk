@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { signInWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '../../utils/firebaseConfig'
+import { useAuth } from '../../context/AuthContext'
 import { RootStackParamList } from '../../types';
 
 
@@ -11,6 +10,8 @@ type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>
 export default function LoginScreen({ navigation}: LoginScreenProps) {
 const [email, setEmail] = useState('')
 const [password, setPassword] = useState('')
+
+const { login } = useAuth()
 
 const handleLogin = async (): Promise<void> => {
     if (!email || !password) {
@@ -24,14 +25,8 @@ const handleLogin = async (): Promise<void> => {
     }
     
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password)
-        const user = userCredential.user
-        
-        console.log('Login successful:', user.uid)
-        Alert.alert('Success', 'Login successful!')
-        
-        // Navigate to Feed Screen with user ID
-        navigation.navigate('Feed', { userId: user.uid })
+        await login(email, password)
+        // Navigation happens automatically via AuthContext and AppNavigator
         
     } catch (error: any) {
         console.error('Login error:', error)
@@ -54,8 +49,7 @@ const handleLogin = async (): Promise<void> => {
 }
 
 const navigateToRegister = () => {
-     navigation.navigate('Register') 
-    console.log('Register not implemented yet')
+    navigation.navigate('Register')
 }
 
 
@@ -111,8 +105,6 @@ const styles = StyleSheet.create({
     },
     form: {
         width: '100%',
-        alignItems: 'center', 
-        justifyContent: 'center',
     },
     input: {
         borderWidth: 1,
