@@ -7,7 +7,7 @@ import { RootStackParamList } from '../../types';
 
 type FeedScreenProps = NativeStackScreenProps<RootStackParamList, 'Feed'>;
 
-export default function FeedScreen({ route }: FeedScreenProps) {
+export default function FeedScreen({ route, navigation }: FeedScreenProps) {
   const { userId } = route.params;
   const { logout } = useAuth();
 
@@ -37,34 +37,17 @@ export default function FeedScreen({ route }: FeedScreenProps) {
           <Text style={styles.userIdText}>User: {userId}</Text>
         </View>
 
-        {/* Sample Posts */}
-        <View style={styles.postCard}>
-          <Text style={styles.postAuthor}>@streetuser1</Text>
-          <Text style={styles.postContent}>
-            Just joined StreetTalk! Excited to connect with everyone
-          </Text>
-          <Text style={styles.postTime}>2 hours ago</Text>
-        </View>
-
-        <View style={styles.postCard}>
-          <Text style={styles.postAuthor}>@cityexplorer</Text>
-          <Text style={styles.postContent}>
-            Beautiful sunset from downtown today. This city never fails to amaze me!
-          </Text>
-          <Text style={styles.postTime}>4 hours ago</Text>
-        </View>
-
-        <View style={styles.postCard}>
-          <Text style={styles.postAuthor}>@techie2024</Text>
-          <Text style={styles.postContent}>
-            Working on some cool projects. Can't wait to share updates!
-          </Text>
-          <Text style={styles.postTime}>6 hours ago</Text>
+        {/* No posts yet */}
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>No posts yet. Be the first to post!</Text>
         </View>
       </ScrollView>
 
       {/* Create Post Button */}
-      <TouchableOpacity style={styles.createPostButton}>
+      <TouchableOpacity 
+        style={styles.createPostButton}
+        onPress={() => navigation.navigate('CreatePost')}
+      >
         <Text style={styles.createPostText}>Post</Text>
       </TouchableOpacity>
     </View>
@@ -166,5 +149,16 @@ const styles = StyleSheet.create({
     color: '#fffaf0',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    color: '#888888',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });

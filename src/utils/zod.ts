@@ -16,7 +16,7 @@ const postContentSchema = z
   .string()
   .trim()
   .min(1, 'Post content cannot be empty')
-  .max(300, 'Post cannot exceed 300 characters');
+  .max(250, 'Post cannot exceed 250 characters');
 
 // Auth schemas
 export const loginSchema = z.object({
