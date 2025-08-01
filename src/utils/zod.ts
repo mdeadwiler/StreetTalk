@@ -11,6 +11,13 @@ const passwordSchema = z
   .min(1, 'Password is required')
   .min(12, 'Password should be at least 12 characters');
 
+// Post content schema
+const postContentSchema = z
+  .string()
+  .trim()
+  .min(1, 'Post content cannot be empty')
+  .max(300, 'Post cannot exceed 300 characters');
+
 // Auth schemas
 export const loginSchema = z.object({
   email: emailSchema,
@@ -28,9 +35,15 @@ export const registerSchema = z
     path: ['confirmPassword'],
   });
 
+// Post schema
+export const createPostSchema = z.object({
+  content: postContentSchema,
+});
+
 // TypeScript types
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
+export type CreatePostFormData = z.infer<typeof createPostSchema>;
 
 // Validation helpers
 export const validateLoginForm = (data: unknown) => {
@@ -39,6 +52,10 @@ export const validateLoginForm = (data: unknown) => {
 
 export const validateRegisterForm = (data: unknown) => {
   return registerSchema.safeParse(data);
+};
+
+export const validateCreatePostForm = (data: unknown) => {
+  return createPostSchema.safeParse(data);
 };
 
 // Error formatting helper

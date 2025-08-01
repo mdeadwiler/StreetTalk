@@ -5,6 +5,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Feed: { userId: string };
+  CreatePost: undefined;
 };
 
 // Auth types
@@ -45,3 +46,4 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
 }
+
