@@ -5,6 +5,7 @@ import { useAuth} from '../../context/AuthContext'
 import { RootStackParamList } from '../../types'
 import { validateCreatePostForm, getZodErrorMessage } from '../../utils/zod'
 import { authStyles } from '../../styles/authStyles'
+import { colors } from '../../styles/theme'
 
 type CreatePostScreenProps = NativeStackScreenProps<RootStackParamList, 'CreatePost'>
 
@@ -67,7 +68,7 @@ return (
 
       <Text style={[
         authStyles.characterCounter,
-        { color: isOverLimit ? '#ff0000' : characterCount > 250 ? '#ff6600' : '#666' }
+        { color: isOverLimit ? '#ff4444' : characterCount > 250 ? '#ff8800' : colors.mutedText }
       ]}>
         {characterCount}/300
       </Text>

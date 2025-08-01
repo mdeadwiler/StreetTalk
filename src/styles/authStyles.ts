@@ -21,7 +21,7 @@ export const authStyles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: spacing.md,
     fontSize: 16,
-    color: '#ffffff',
+    color: colors.text,
     backgroundColor: 'transparent',
   },
   button: {
@@ -37,5 +37,36 @@ export const authStyles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  buttonDisabled: {
+    backgroundColor: colors.mutedText,
+  },
+  buttonTextDisabled: {
+    color: colors.mutedText,
+  },
   linkText: typography.linkText,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderColor,
+    marginBottom: spacing.lg,
+  },
+  textArea: {
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    borderRadius: 8,
+    padding: spacing.md,
+    fontSize: 16,
+    color: colors.text,
+    backgroundColor: 'transparent',
+    textAlignVertical: 'top',
+  },
+  characterCounter: {
+    fontSize: 14,
+    textAlign: 'right',
+    marginTop: spacing.sm,
+    color: colors.mutedText,
+  },
 });
