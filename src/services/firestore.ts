@@ -337,6 +337,41 @@ export const subscribeToPostsUpdates = (callback: (posts: Post[]) => void, limit
   });
 };
 
+// Paginated comments fetching to replace expensive real-time listeners
+export const getPaginatedComments = async (postId: string, limitCount: number = 50, lastVisible?: any): Promise<{ comments: Comment[], lastVisible: any }> => {
+  try {
+    let q = query(
+      collection(db, 'comments'), 
+      where('postId', '==', postId),
+      orderBy('createdAt', 'desc'),
+      limit(limitCount)
+    );
+
+    if (lastVisible) {
+      q = query(
+        collection(db, 'comments'), 
+        where('postId', '==', postId),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastVisible),
+        limit(limitCount)
+      );
+    }
+
+    const querySnapshot = await getDocs(q);
+    const comments = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Comment[];
+
+    const newLastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+
+    return { comments, lastVisible: newLastVisible };
+  } catch (error) {
+    console.error('Error fetching paginated comments:', error);
+    throw error;
+  }
+};
+
 export const subscribeToCommentsUpdates = (postId: string, callback: (comments: Comment[]) => void, limitCount: number = 50) => {
   const q = query(
     collection(db, 'comments'), 

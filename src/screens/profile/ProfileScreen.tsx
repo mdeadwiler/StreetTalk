@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { Post } from '../../types';
-import { getUserPosts } from '../../services/firestore';
+import { getPaginatedUserPosts } from '../../services/firestore';
 import { colors, spacing } from '../../styles/theme';
 import PostCard from '../../components/post/PostCard';
 
@@ -11,6 +11,9 @@ export default function ProfileScreen() {
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -18,12 +21,23 @@ export default function ProfileScreen() {
     }
   }, [user]);
 
-  const loadUserPosts = async () => {
+  const loadUserPosts = async (refresh = false) => {
     if (!user) return;
     
     try {
-      const result = await getUserPosts(user.uid);
-      setUserPosts(result.posts);
+      if (refresh) {
+        setRefreshing(true);
+        const { posts, lastVisible: newLastVisible } = await getPaginatedUserPosts(user.uid, 20);
+        setUserPosts(posts);
+        setLastVisible(newLastVisible);
+        setHasMore(posts.length === 20);
+      } else {
+        setLoading(true);
+        const { posts, lastVisible: newLastVisible } = await getPaginatedUserPosts(user.uid, 20);
+        setUserPosts(posts);
+        setLastVisible(newLastVisible);
+        setHasMore(posts.length === 20);
+      }
     } catch (error) {
       console.error('Error loading user posts:', error);
     } finally {
@@ -32,9 +46,29 @@ export default function ProfileScreen() {
     }
   };
 
+  const loadMorePosts = async () => {
+    if (!hasMore || loadingMore || !lastVisible || !user) return;
+
+    try {
+      setLoadingMore(true);
+      const { posts: newPosts, lastVisible: newLastVisible } = await getPaginatedUserPosts(user.uid, 20, lastVisible);
+      
+      if (newPosts.length > 0) {
+        setUserPosts(prev => [...prev, ...newPosts]);
+        setLastVisible(newLastVisible);
+        setHasMore(newPosts.length === 20);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error loading more posts:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   const handleRefresh = () => {
-    setRefreshing(true);
-    loadUserPosts();
+    loadUserPosts(true);
   };
 
   return (
@@ -44,53 +78,66 @@ export default function ProfileScreen() {
         <Text style={styles.headerTitle}>Profile</Text>
       </View>
 
-      <ScrollView 
+      <FlatList
         style={styles.content}
+        data={userPosts}
+        keyExtractor={(item) => item.id}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-      >
-        {/* User Info */}
-        <View style={styles.userSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.email?.charAt(0).toUpperCase() || '?'}
-            </Text>
-          </View>
-          <Text style={styles.displayName}>
-            @{userProfile?.username || 'Unknown'}
-          </Text>
-          <Text style={styles.email}>{userProfile?.email}</Text>
-          <Text style={styles.postCount}>
-            {userPosts.length} {userPosts.length === 1 ? 'post' : 'posts'}
-          </Text>
-        </View>
+        onEndReached={loadMorePosts}
+        onEndReachedThreshold={0.1}
+        ListHeaderComponent={() => (
+          <View>
+            {/* User Info */}
+            <View style={styles.userSection}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {user?.email?.charAt(0).toUpperCase() || '?'}
+                </Text>
+              </View>
+              <Text style={styles.displayName}>
+                @{userProfile?.username || 'Unknown'}
+              </Text>
+              <Text style={styles.email}>{userProfile?.email}</Text>
+              <Text style={styles.postCount}>
+                {userPosts.length} {userPosts.length === 1 ? 'post' : 'posts'}
+              </Text>
+            </View>
 
-        {/* User Posts */}
-        <View style={styles.postsSection}>
-          <Text style={styles.sectionTitle}>Your Posts</Text>
-          
-          {loading ? (
+            {/* Posts Section Header */}
+            <View style={styles.postsSection}>
+              <Text style={styles.sectionTitle}>Your Posts</Text>
+            </View>
+          </View>
+        )}
+        ListEmptyComponent={() => (
+          loading ? (
             <View style={styles.loadingContainer}>
               <Text style={styles.loadingText}>Loading your posts...</Text>
             </View>
-          ) : userPosts.length === 0 ? (
+          ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>You haven't posted anything yet.</Text>
             </View>
-          ) : (
-            userPosts.map((post) => (
-              <PostCard 
-                key={post.id} 
-                post={post} 
-                onPress={() => {}} // Could navigate to post details
-                currentUserId={user?.uid}
-                onDelete={loadUserPosts} // Refresh list after deletion
-              />
-            ))
-          )}
-        </View>
-      </ScrollView>
+          )
+        )}
+        ListFooterComponent={() => (
+          loadingMore ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading more posts...</Text>
+            </View>
+          ) : null
+        )}
+        renderItem={({ item }) => (
+          <PostCard 
+            post={item} 
+            onPress={() => {}} // Could navigate to post details
+            currentUserId={user?.uid}
+            onDelete={() => loadUserPosts(true)} // Refresh list after deletion
+          />
+        )}
+      />
     </View>
   );
 }

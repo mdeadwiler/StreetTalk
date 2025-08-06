@@ -3,19 +3,20 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  ScrollView, 
+  FlatList, 
   TextInput, 
   TouchableOpacity, 
   Alert,
   KeyboardAvoidingView,
-  Platform 
+  Platform,
+  RefreshControl 
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList, Post, Comment } from '../../types';
 import { 
   getPost, 
-  subscribeToCommentsUpdates, 
+  getPaginatedComments, 
   createComment,
   formatTimestamp 
 } from '../../services/firestore';
@@ -33,17 +34,59 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     loadPost();
-    
-    const unsubscribe = subscribeToCommentsUpdates(postId, (updatedComments) => {
-      setComments(updatedComments);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    loadComments();
   }, [postId]);
+
+  const loadComments = async (refresh = false) => {
+    try {
+      if (refresh) {
+        setRefreshing(true);
+        const { comments: newComments, lastVisible: newLastVisible } = await getPaginatedComments(postId, 30);
+        setComments(newComments);
+        setLastVisible(newLastVisible);
+        setHasMore(newComments.length === 30);
+      } else {
+        setLoading(true);
+        const { comments: newComments, lastVisible: newLastVisible } = await getPaginatedComments(postId, 30);
+        setComments(newComments);
+        setLastVisible(newLastVisible);
+        setHasMore(newComments.length === 30);
+      }
+    } catch (error) {
+      console.error('Error loading comments:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const loadMoreComments = async () => {
+    if (!hasMore || loadingMore || !lastVisible) return;
+
+    try {
+      setLoadingMore(true);
+      const { comments: newComments, lastVisible: newLastVisible } = await getPaginatedComments(postId, 30, lastVisible);
+      
+      if (newComments.length > 0) {
+        setComments(prev => [...prev, ...newComments]);
+        setLastVisible(newLastVisible);
+        setHasMore(newComments.length === 30);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error loading more comments:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const loadPost = async () => {
     try {
@@ -73,6 +116,8 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
     try {
       await createComment(postId, user.uid, userProfile.username, newComment);
       setNewComment('');
+      // Refresh comments to show the new one
+      loadComments(true);
     } catch (error) {
       console.error('Error creating comment:', error);
       Alert.alert('Error', 'Failed to post comment. Please try again.');
@@ -99,49 +144,69 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
       </View>
 
       {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Original Post */}
-        {post && (
-          <View style={styles.postSection}>
-            <PostCard 
-              post={post} 
-              onPress={() => {}} 
-              currentUserId={user?.uid}
-            />
+      <FlatList
+        style={styles.content}
+        data={comments}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => loadComments(true)} />
+        }
+        onEndReached={loadMoreComments}
+        onEndReachedThreshold={0.1}
+        ListHeaderComponent={() => (
+          <View>
+            {/* Original Post */}
+            {post && (
+              <View style={styles.postSection}>
+                <PostCard 
+                  post={post} 
+                  onPress={() => {}} 
+                  currentUserId={user?.uid}
+                />
+              </View>
+            )}
+
+            {/* Comments Section Header */}
+            <View style={styles.commentsSection}>
+              <Text style={styles.commentsTitle}>
+                Comments ({comments.length})
+              </Text>
+            </View>
           </View>
         )}
-
-        {/* Comments Section */}
-        <View style={styles.commentsSection}>
-          <Text style={styles.commentsTitle}>
-            Comments ({comments.length})
-          </Text>
-
-          {loading ? (
+        ListEmptyComponent={() => (
+          loading ? (
             <View style={styles.loadingContainer}>
               <Text style={styles.loadingText}>Loading comments...</Text>
             </View>
-          ) : comments.length === 0 ? (
+          ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No comments yet. Be the first to comment!</Text>
             </View>
-          ) : (
-            comments.map((comment) => (
-              <View key={comment.id} style={styles.commentCard}>
-                <View style={styles.commentHeader}>
-                  <Text style={styles.commentAuthor}>
-                    @{comment.username}
-                  </Text>
-                  <Text style={styles.commentTime}>
-                    {formatTimestamp(comment.createdAt)}
-                  </Text>
-                </View>
-                <Text style={styles.commentContent}>{comment.content}</Text>
-              </View>
-            ))
-          )}
-        </View>
-      </ScrollView>
+          )
+        )}
+        ListFooterComponent={() => (
+          loadingMore ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading more comments...</Text>
+            </View>
+          ) : null
+        )}
+        renderItem={({ item: comment }) => (
+          <View style={styles.commentCard}>
+            <View style={styles.commentHeader}>
+              <Text style={styles.commentAuthor}>
+                @{comment.username}
+              </Text>
+              <Text style={styles.commentTime}>
+                {formatTimestamp(comment.createdAt)}
+              </Text>
+            </View>
+            <Text style={styles.commentContent}>{comment.content}</Text>
+          </View>
+        )}
+      />
 
       {/* Comment Input */}
       <View style={styles.inputSection}>

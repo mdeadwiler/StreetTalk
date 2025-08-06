@@ -16,15 +16,57 @@ export default function HomeScreen() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [hasMore, setHasMore] = useState(true);
 
-  useEffect(() => {
-    const unsubscribe = subscribeToPostsUpdates((updatedPosts) => {
-      setPosts(updatedPosts);
+  const loadPosts = async (refresh = false) => {
+    try {
+      if (refresh) {
+        setRefreshing(true);
+        const { posts: newPosts, lastVisible: newLastVisible } = await getPaginatedPosts(20);
+        setPosts(newPosts);
+        setLastVisible(newLastVisible);
+        setHasMore(newPosts.length === 20);
+      } else {
+        setLoading(true);
+        const { posts: newPosts, lastVisible: newLastVisible } = await getPaginatedPosts(20);
+        setPosts(newPosts);
+        setLastVisible(newLastVisible);
+        setHasMore(newPosts.length === 20);
+      }
+    } catch (error) {
+      console.error('Error loading posts:', error);
+      Alert.alert('Error', 'Failed to load posts. Please try again.');
+    } finally {
       setLoading(false);
       setRefreshing(false);
-    });
+    }
+  };
 
-    return () => unsubscribe();
+  const loadMorePosts = async () => {
+    if (!hasMore || loadingMore || !lastVisible) return;
+
+    try {
+      setLoadingMore(true);
+      const { posts: newPosts, lastVisible: newLastVisible } = await getPaginatedPosts(20, lastVisible);
+      
+      if (newPosts.length > 0) {
+        setPosts(prev => [...prev, ...newPosts]);
+        setLastVisible(newLastVisible);
+        setHasMore(newPosts.length === 20);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error loading more posts:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPosts();
   }, []);
 
   const handleLogout = async () => {
@@ -37,9 +79,7 @@ export default function HomeScreen() {
   };
 
   const handleRefresh = () => {
-    setRefreshing(true);
-    // The real-time listener will automatically update the posts
-    setTimeout(() => setRefreshing(false), 1000);
+    loadPosts(true);
   };
 
   const handleCreatePost = () => {
@@ -57,38 +97,49 @@ export default function HomeScreen() {
       </View>
 
       {/* Main Feed */}
-      <ScrollView 
-        style={styles.feedContainer} 
+      <FlatList
+        style={styles.feedContainer}
+        data={posts}
+        keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
-      >
-        <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeText}>Welcome to Street Talk</Text>
-          <Text style={styles.userEmailText}>@{userProfile?.username}</Text>
-        </View>
-
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading posts...</Text>
+        onEndReached={loadMorePosts}
+        onEndReachedThreshold={0.1}
+        ListHeaderComponent={() => (
+          <View style={styles.welcomeSection}>
+            <Text style={styles.welcomeText}>Welcome to Street Talk</Text>
+            <Text style={styles.userEmailText}>@{userProfile?.username}</Text>
           </View>
-        ) : posts.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No posts yet. Be the first to post!</Text>
-          </View>
-        ) : (
-          posts.map((post) => (
-            <PostCard 
-              key={post.id} 
-              post={post} 
-              onPress={() => navigation.navigate('PostComments', { postId: post.id })}
-              currentUserId={user?.uid}
-              onEdit={() => navigation.navigate('EditPost', { postId: post.id })}
-            />
-          ))
         )}
-      </ScrollView>
+        ListEmptyComponent={() => (
+          loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading posts...</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No posts yet. Be the first to post!</Text>
+            </View>
+          )
+        )}
+        ListFooterComponent={() => (
+          loadingMore ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading more posts...</Text>
+            </View>
+          ) : null
+        )}
+        renderItem={({ item }) => (
+          <PostCard 
+            post={item} 
+            onPress={() => navigation.navigate('PostComments', { postId: item.id })}
+            currentUserId={user?.uid}
+            onEdit={() => navigation.navigate('EditPost', { postId: item.id })}
+          />
+        )}
+      />
 
       {/* Create Post Button */}
       <TouchableOpacity 
