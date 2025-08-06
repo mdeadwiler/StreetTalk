@@ -103,13 +103,13 @@ class CostMonitor {
   generateReport(): string {
     const stats = this.getStats();
     return `
-📊 Firestore Cost Report (Last Hour):
+  Firestore Cost Report (Last Hour):
 - Total document reads: ${stats.totalReads}
 - Average docs per operation: ${stats.averageDocsPerOperation.toFixed(1)}
 - Expensive operations (>20 docs): ${stats.expensiveOperations}
 - Operations by type: ${JSON.stringify(stats.operationCounts, null, 2)}
 
-💡 Tips to reduce costs:
+  Tips to reduce costs:
 - Use pagination with limit()
 - Add indexes for complex queries
 - Cache frequently accessed data
@@ -121,7 +121,7 @@ class CostMonitor {
     // Integration point for analytics services
     // Could send to Firebase Analytics, Mixpanel, etc.
     if (__DEV__) {
-      console.log(`📊 Firestore: ${metric.operation} on ${metric.collection} (${metric.docCount} docs)`);
+      console.log(`Firestore: ${metric.operation} on ${metric.collection} (${metric.docCount} docs)`);
     }
   }
 }
@@ -157,12 +157,12 @@ export const withCostTracking = async <T>(
     
     // Warn about slow operations
     if (duration > 1000) {
-      console.warn(`⏱️ Slow Firestore operation: ${operation} took ${duration}ms`);
+      console.warn(`Slow Firestore operation: ${operation} took ${duration}ms`);
     }
     
     return result.data;
   } catch (error) {
-    console.error(`❌ Firestore operation failed: ${operation} on ${collection}`, error);
+    console.error(`Firestore operation failed: ${operation} on ${collection}`, error);
     throw error;
   }
 };
