@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList, Post } from '../../types';
-import { subscribeToPostsUpdates } from '../../services/firestore';
+import { getPaginatedPosts } from '../../services/firestore';
 import { colors, spacing } from '../../styles/theme';
 import PostCard from '../../components/post/PostCard';
 

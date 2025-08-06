@@ -253,7 +253,74 @@ export const deleteComment = async (commentId: string, postId: string): Promise<
   }
 };
 
-// Real-time listeners with limits to prevent cost attacks
+// Paginated posts fetching to replace expensive real-time listeners
+export const getPaginatedPosts = async (limitCount: number = 20, lastVisible?: any): Promise<{ posts: Post[], lastVisible: any }> => {
+  try {
+    let q = query(
+      collection(db, 'posts'), 
+      orderBy('createdAt', 'desc'),
+      limit(limitCount)
+    );
+
+    if (lastVisible) {
+      q = query(
+        collection(db, 'posts'), 
+        orderBy('createdAt', 'desc'),
+        startAfter(lastVisible),
+        limit(limitCount)
+      );
+    }
+
+    const querySnapshot = await getDocs(q);
+    const posts = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Post[];
+
+    const newLastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+
+    return { posts, lastVisible: newLastVisible };
+  } catch (error) {
+    console.error('Error fetching paginated posts:', error);
+    throw error;
+  }
+};
+
+export const getPaginatedUserPosts = async (userId: string, limitCount: number = 20, lastVisible?: any): Promise<{ posts: Post[], lastVisible: any }> => {
+  try {
+    let q = query(
+      collection(db, 'posts'), 
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc'),
+      limit(limitCount)
+    );
+
+    if (lastVisible) {
+      q = query(
+        collection(db, 'posts'), 
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastVisible),
+        limit(limitCount)
+      );
+    }
+
+    const querySnapshot = await getDocs(q);
+    const posts = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Post[];
+
+    const newLastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+
+    return { posts, lastVisible: newLastVisible };
+  } catch (error) {
+    console.error('Error fetching paginated user posts:', error);
+    throw error;
+  }
+};
+
+// Real-time listeners with limits to prevent cost attacks (keep for initial load only)
 export const subscribeToPostsUpdates = (callback: (posts: Post[]) => void, limitCount: number = 30) => {
   const q = query(
     collection(db, 'posts'), 
