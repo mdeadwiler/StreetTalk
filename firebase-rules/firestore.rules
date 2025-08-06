@@ -1,0 +1,159 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ─────────── Helper Functions ─────────── */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Enforce pagination limits to prevent cost attacks
+    function hasReasonableLimit(maxLimit) {
+      return request.query.limit != null
+             && request.query.limit is int
+             && request.query.limit <= maxLimit
+             && request.query.limit > 0;
+    }
+
+    // Ensure queries are properly ordered for efficient indexing
+    function orderedByCreatedDesc() {
+      return request.query.orderBy.size() == 1
+             && request.query.orderBy[0].field == 'createdAt'
+             && request.query.orderBy[0].direction == 'DESC';
+    }
+
+    // Validate string content length and presence
+    function validContent(maxLength) {
+      return request.resource.data.content is string
+             && request.resource.data.content.size() > 0
+             && request.resource.data.content.size() <= maxLength;
+    }
+
+    /* ─────────── POSTS COLLECTION ─────────── */
+    match /posts/{postId} {
+      
+      // READ: Single post by ID (efficient)
+      allow get: if isSignedIn();
+
+      // LIST: Only paginated queries with proper ordering
+      allow list: if isSignedIn()
+                  && orderedByCreatedDesc()
+                  && hasReasonableLimit(50)  // Max 50 posts per query
+                  && (
+                    // Global feed query (all posts)
+                    request.query.where.size() == 0
+                    ||
+                    // User-specific posts query
+                    (request.query.where.size() == 1 
+                     && 'userId' in request.query.where
+                     && request.query.where.userId[0] == '==')
+                  );
+
+      // CREATE: Only authenticated users can create posts
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && validContent(250)  // Max 250 characters
+                    && request.resource.data.username is string
+                    && request.resource.data.username.size() >= 4
+                    && request.resource.data.username.size() <= 12
+                    && request.resource.data.createdAt == request.time
+                    && request.resource.data.likes == 0
+                    && request.resource.data.commentsCount == 0;
+
+      // UPDATE: Only post owner can update content
+      allow update: if isSignedIn()
+                    && resource.data.userId == request.auth.uid
+                    && validContent(250)
+                    && request.resource.data.updatedAt == request.time
+                    // Prevent modification of system fields
+                    && request.resource.data.userId == resource.data.userId
+                    && request.resource.data.username == resource.data.username
+                    && request.resource.data.createdAt == resource.data.createdAt;
+
+      // DELETE: Only post owner can delete
+      allow delete: if isSignedIn()
+                    && resource.data.userId == request.auth.uid;
+    }
+
+    /* ─────────── COMMENTS COLLECTION ─────────── */
+    match /comments/{commentId} {
+      
+      // READ: Single comment by ID
+      allow get: if isSignedIn();
+
+      // LIST: Only comments for a specific post (prevent full collection reads)
+      allow list: if isSignedIn()
+                  && request.query.where.size() >= 1
+                  && 'postId' in request.query.where
+                  && request.query.where.postId[0] == '=='  // Must filter by postId
+                  && orderedByCreatedDesc()
+                  && hasReasonableLimit(100);  // Max 100 comments per query
+
+      // CREATE: Only authenticated users can comment
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && validContent(250)  // Max 250 characters
+                    && request.resource.data.postId is string
+                    && request.resource.data.username is string
+                    && request.resource.data.username.size() >= 4
+                    && request.resource.data.username.size() <= 12
+                    && request.resource.data.createdAt == request.time;
+
+      // UPDATE: Only comment owner can update
+      allow update: if isSignedIn()
+                    && resource.data.userId == request.auth.uid
+                    && validContent(250)
+                    // Prevent modification of system fields
+                    && request.resource.data.userId == resource.data.userId
+                    && request.resource.data.postId == resource.data.postId
+                    && request.resource.data.username == resource.data.username
+                    && request.resource.data.createdAt == resource.data.createdAt;
+
+      // DELETE: Only comment owner can delete
+      allow delete: if isSignedIn()
+                    && resource.data.userId == request.auth.uid;
+    }
+
+    /* ─────────── USERS COLLECTION ─────────── */
+    match /users/{userId} {
+      
+      // READ: Single user profile (for username lookups)
+      allow get: if isSignedIn();
+
+      // LIST: Very restricted to prevent user enumeration attacks
+      allow list: if isSignedIn()
+                  && request.query.where.size() == 1
+                  && 'username' in request.query.where
+                  && request.query.where.username[0] == '=='  // Only username lookups
+                  && hasReasonableLimit(1);  // Only 1 result expected
+
+      // CREATE: Only during registration
+      allow create: if isOwner(userId)
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.email is string
+                    && request.resource.data.username is string
+                    && request.resource.data.username.size() >= 4
+                    && request.resource.data.username.size() <= 12
+                    && request.resource.data.createdAt == request.time;
+
+      // UPDATE: Only user can update their own profile
+      allow update: if isOwner(userId)
+                    // Prevent modification of critical fields
+                    && request.resource.data.uid == resource.data.uid
+                    && request.resource.data.email == resource.data.email
+                    && request.resource.data.createdAt == resource.data.createdAt;
+
+      // DELETE: Only user can delete their own profile
+      allow delete: if isOwner(userId);
+    }
+
+    /* ─────────── SECURITY: Block everything else ─────────── */
+    match /{document=**} {
+      allow read, write: if false;  // Explicit deny for any other collections
+    }
+  }
+}

@@ -12,7 +12,9 @@ import {
   onSnapshot, 
   serverTimestamp,
   increment,
-  Timestamp 
+  Timestamp,
+  limit,
+  startAfter
 } from 'firebase/firestore';
 import { db } from '../utils/firebaseConfig';
 import { Post, Comment } from '../types';
@@ -54,14 +56,33 @@ export const createPost = async (
   }
 };
 
-export const getPosts = async (): Promise<Post[]> => {
+export const getPosts = async (limitCount: number = 20, lastVisible?: any): Promise<{posts: Post[], lastVisible: any}> => {
   try {
-    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+    let q = query(
+      collection(db, 'posts'), 
+      orderBy('createdAt', 'desc'),
+      limit(limitCount)
+    );
+    
+    // Add pagination cursor if provided
+    if (lastVisible) {
+      q = query(
+        collection(db, 'posts'), 
+        orderBy('createdAt', 'desc'),
+        startAfter(lastVisible),
+        limit(limitCount)
+      );
+    }
+    
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const posts = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Post[];
+    
+    const newLastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+    
+    return { posts, lastVisible: newLastVisible };
   } catch (error) {
     console.error('Error fetching posts:', error);
     throw error;
@@ -117,18 +138,34 @@ export const deletePost = async (postId: string): Promise<void> => {
   }
 };
 
-export const getUserPosts = async (userId: string): Promise<Post[]> => {
+export const getUserPosts = async (userId: string, limitCount: number = 20, lastVisible?: any): Promise<{posts: Post[], lastVisible: any}> => {
   try {
-    const q = query(
+    let q = query(
       collection(db, 'posts'), 
       where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
+      limit(limitCount)
     );
+    
+    if (lastVisible) {
+      q = query(
+        collection(db, 'posts'), 
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastVisible),
+        limit(limitCount)
+      );
+    }
+    
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const posts = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Post[];
+    
+    const newLastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+    
+    return { posts, lastVisible: newLastVisible };
   } catch (error) {
     console.error('Error fetching user posts:', error);
     throw error;
@@ -165,18 +202,34 @@ export const createComment = async (
   }
 };
 
-export const getPostComments = async (postId: string): Promise<Comment[]> => {
+export const getPostComments = async (postId: string, limitCount: number = 50, lastVisible?: any): Promise<{comments: Comment[], lastVisible: any}> => {
   try {
-    const q = query(
+    let q = query(
       collection(db, 'comments'), 
       where('postId', '==', postId),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
+      limit(limitCount)
     );
+    
+    if (lastVisible) {
+      q = query(
+        collection(db, 'comments'), 
+        where('postId', '==', postId),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastVisible),
+        limit(limitCount)
+      );
+    }
+    
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const comments = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Comment[];
+    
+    const newLastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
+    
+    return { comments, lastVisible: newLastVisible };
   } catch (error) {
     console.error('Error fetching comments:', error);
     throw error;
@@ -200,9 +253,13 @@ export const deleteComment = async (commentId: string, postId: string): Promise<
   }
 };
 
-// Real-time listeners
-export const subscribeToPostsUpdates = (callback: (posts: Post[]) => void) => {
-  const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+// Real-time listeners with limits to prevent cost attacks
+export const subscribeToPostsUpdates = (callback: (posts: Post[]) => void, limitCount: number = 30) => {
+  const q = query(
+    collection(db, 'posts'), 
+    orderBy('createdAt', 'desc'),
+    limit(limitCount)  // Limit real-time listener to prevent cost attacks
+  );
   
   return onSnapshot(q, (querySnapshot) => {
     const posts = querySnapshot.docs.map(doc => ({
@@ -213,11 +270,12 @@ export const subscribeToPostsUpdates = (callback: (posts: Post[]) => void) => {
   });
 };
 
-export const subscribeToCommentsUpdates = (postId: string, callback: (comments: Comment[]) => void) => {
+export const subscribeToCommentsUpdates = (postId: string, callback: (comments: Comment[]) => void, limitCount: number = 50) => {
   const q = query(
     collection(db, 'comments'), 
     where('postId', '==', postId),
-    orderBy('createdAt', 'desc')
+    orderBy('createdAt', 'desc'),
+    limit(limitCount)  // Limit comments listener to prevent cost attacks
   );
   
   return onSnapshot(q, (querySnapshot) => {
@@ -246,4 +304,26 @@ export const formatTimestamp = (timestamp: any): string => {
   if (diffInDays < 7) return `${diffInDays}d ago`;
   
   return date.toLocaleDateString();
+};
+
+// Simple client-side rate limiting helper
+const actionTimestamps = new Map<string, number[]>();
+
+export const checkRateLimit = (userId: string, action: string, maxActions: number, windowMs: number): boolean => {
+  const key = `${userId}:${action}`;
+  const now = Date.now();
+  const timestamps = actionTimestamps.get(key) || [];
+  
+  // Remove old timestamps outside the window
+  const validTimestamps = timestamps.filter(time => now - time < windowMs);
+  
+  if (validTimestamps.length >= maxActions) {
+    return false; // Rate limit exceeded
+  }
+  
+  // Add current timestamp
+  validTimestamps.push(now);
+  actionTimestamps.set(key, validTimestamps);
+  
+  return true; // Action allowed
 };

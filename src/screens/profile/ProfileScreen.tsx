@@ -22,8 +22,8 @@ export default function ProfileScreen() {
     if (!user) return;
     
     try {
-      const posts = await getUserPosts(user.uid);
-      setUserPosts(posts);
+      const result = await getUserPosts(user.uid);
+      setUserPosts(result.posts);
     } catch (error) {
       console.error('Error loading user posts:', error);
     } finally {
