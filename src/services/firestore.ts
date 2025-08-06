@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../utils/firebaseConfig';
 import { Post, Comment } from '../types';
+import { sanitizeUserContent } from '../utils/security';
 
 // Posts Collection Functions
 export const createPost = async (
@@ -28,7 +29,7 @@ export const createPost = async (
 ): Promise<string> => {
   try {
     const postData: any = {
-      content: content.trim(),
+      content: sanitizeUserContent(content),
       userId,
       username,
       createdAt: serverTimestamp(),
@@ -90,7 +91,7 @@ export const updatePost = async (postId: string, content: string): Promise<void>
   try {
     const docRef = doc(db, 'posts', postId);
     await updateDoc(docRef, {
-      content: content.trim(),
+      content: sanitizeUserContent(content),
       updatedAt: serverTimestamp()
     });
   } catch (error) {
@@ -145,7 +146,7 @@ export const createComment = async (
     // Add comment
     const docRef = await addDoc(collection(db, 'comments'), {
       postId,
-      content: content.trim(),
+      content: sanitizeUserContent(content),
       userId,
       username,
       createdAt: serverTimestamp()

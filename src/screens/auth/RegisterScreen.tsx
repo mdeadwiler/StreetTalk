@@ -62,20 +62,22 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         />
         <TextInput
           style={authStyles.input}
-          placeholder="Username (4-12 characters)"
+          placeholder="Username (4-12 chars: letters, numbers, _-.)"
           placeholderTextColor="#888"
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
           maxLength={12}
+          autoComplete="username"
         />
         <TextInput
           style={authStyles.input}
-          placeholder="Password"
+          placeholder="Password (12+ chars with mixed case, number, special)"
           placeholderTextColor="#888"
           value={password}
           onChangeText={setPassword}
           secureTextEntry={true}
+          autoComplete="new-password"
         />
         <TextInput
           style={authStyles.input}

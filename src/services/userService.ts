@@ -10,6 +10,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../utils/firebaseConfig';
 import { UserProfile } from '../types';
+import { validateUsernameSecure, sanitizeUserContent } from '../utils/security';
 
 // Create user profile in Firestore
 export const createUserProfile = async (
@@ -18,10 +19,19 @@ export const createUserProfile = async (
   username: string
 ): Promise<void> => {
   try {
+    // Validate username before storing
+    const validation = validateUsernameSecure(username);
+    if (!validation.isValid) {
+      throw new Error(validation.error || 'Invalid username');
+    }
+
+    // Sanitize and normalize username
+    const cleanUsername = sanitizeUserContent(username).toLowerCase();
+    
     await setDoc(doc(db, 'users', uid), {
       uid,
       email,
-      username: username.toLowerCase(), // Store usernames in lowercase for consistency
+      username: cleanUsername,
       createdAt: serverTimestamp()
     });
   } catch (error) {
@@ -89,26 +99,9 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   }
 };
 
-// Validate username format
+// Validate username format (using secure validation)
 export const validateUsername = (username: string): { isValid: boolean; error?: string } => {
-  if (!username) {
-    return { isValid: false, error: 'Username is required' };
-  }
-  
-  if (username.length < 4) {
-    return { isValid: false, error: 'Username must be at least 4 characters' };
-  }
-  
-  if (username.length > 12) {
-    return { isValid: false, error: 'Username cannot exceed 12 characters' };
-  }
-  
-  const usernameRegex = /^[a-zA-Z0-9_]+$/;
-  if (!usernameRegex.test(username)) {
-    return { isValid: false, error: 'Username can only contain letters, numbers, and underscores' };
-  }
-  
-  return { isValid: true };
+  return validateUsernameSecure(username);
 };
 
 // Generate available username suggestions

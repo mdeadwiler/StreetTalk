@@ -55,6 +55,7 @@ return (
                 value={username}
                 onChangeText={setUsername}
                 autoCapitalize="none"
+                autoComplete="username"
             />
 
             <TextInput 
@@ -64,6 +65,7 @@ return (
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={true}
+                autoComplete="current-password"
             />
 
             <TouchableOpacity style={authStyles.button} onPress={handleLogin}>

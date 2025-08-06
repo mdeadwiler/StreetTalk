@@ -9,15 +9,32 @@ const emailSchema = z
 const passwordSchema = z
   .string()
   .min(1, 'Password is required')
-  .min(12, 'Password should be at least 12 characters');
+  .min(12, 'Password must be at least 12 characters')
+  .max(128, 'Password cannot exceed 128 characters')
+  .refine((password) => {
+    // Require uppercase, lowercase, number, and special character
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password);
+    return hasUpper && hasLower && hasNumber && hasSpecial;
+  }, 'Password must contain uppercase, lowercase, number, and special character');
 
-// Username schema
+// Username schema with security validation
 const usernameSchema = z
   .string()
   .min(1, 'Username is required')
   .min(4, 'Username must be at least 4 characters')
   .max(12, 'Username cannot exceed 12 characters')
-  .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores');
+  .regex(/^[\p{L}\p{N}_\-.]{4,12}$/u, 'Username can only contain letters, numbers, underscore, hyphen, and period')
+  .refine((username) => {
+    // Additional security checks
+    if (username.includes('..')) return false;
+    if (username.startsWith('.') || username.endsWith('.')) return false;
+    if (/[<>'"&\/\\#$\[\]{}()=+*?^|~`!@%]/.test(username)) return false;
+    if (/[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E]/.test(username)) return false;
+    return true;
+  }, 'Username contains invalid or unsafe characters');
 
 // Post content schema
 const postContentSchema = z
