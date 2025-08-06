@@ -20,26 +20,31 @@ type RegisterScreenProps = NativeStackScreenProps<
 
 export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const { register } = useAuth();
 
   const handleRegister = async (): Promise<void> => {
-    const result = validateRegisterForm({ email, password, confirmPassword });
+    const result = validateRegisterForm({ email, username, password, confirmPassword });
     if (!result.success) {
       Alert.alert("Error", getZodErrorMessage(result.error));
       return;
     }
 
     try {
-      await register(email, password);
+      await register(email, username, password);
       // Navigation happens automatically via AuthContext and AppNavigator
       
     } catch (error: any) {
       console.log("Registration Error", error);
-      const errorMessage = getFirebaseErrorMessage(error.code);
-      Alert.alert("Error", errorMessage);
+      if (error.message === 'Username is already taken') {
+        Alert.alert("Error", "This username is already taken. Please choose a different one.");
+      } else {
+        const errorMessage = getFirebaseErrorMessage(error.code);
+        Alert.alert("Error", errorMessage);
+      }
     }
   };
   return (
@@ -54,6 +59,15 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
+        />
+        <TextInput
+          style={authStyles.input}
+          placeholder="Username (4-12 characters)"
+          placeholderTextColor="#888"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+          maxLength={12}
         />
         <TextInput
           style={authStyles.input}

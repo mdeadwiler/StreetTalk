@@ -2,8 +2,10 @@ import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import LoginScreen from '../screens/auth/LoginScreen'
 import RegisterScreen from '../screens/auth/RegisterScreen'
-import FeedScreen from '../screens/feed/FeedScreen'
+import { TabNavigator } from './TabNavigator'
 import { CreatePostScreen } from '../screens/post/CreatePostScreen'
+import { EditPostScreen } from '../screens/post/EditPostScreen'
+import PostCommentsScreen from '../screens/post/PostCommentsScreen'
 import { useAuth } from '../context/AuthContext'
 import { ActivityIndicator, View } from 'react-native'
 import { RootStackParamList } from '../types';
@@ -27,8 +29,10 @@ export const AppNavigator = () => {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             {user ? (
                 <>
-                    <Stack.Screen name='Feed' component={FeedScreen} initialParams={{ userId: user.uid }} />
+                    <Stack.Screen name='MainTabs' component={TabNavigator} />
                     <Stack.Screen name='CreatePost' component={CreatePostScreen} />
+                    <Stack.Screen name='EditPost' component={EditPostScreen} />
+                    <Stack.Screen name='PostComments' component={PostCommentsScreen} />
                 </>
             ) : ( 
                 <>

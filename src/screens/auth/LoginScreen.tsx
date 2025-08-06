@@ -10,26 +10,30 @@ import { validateLoginForm, getZodErrorMessage, getFirebaseErrorMessage } from '
 type LoginScreenProps = NativeStackScreenProps<RootStackParamList, 'Login'>
 
 export default function LoginScreen({ navigation}: LoginScreenProps) {
-const [email, setEmail] = useState('')
+const [username, setUsername] = useState('')
 const [password, setPassword] = useState('')
 
 const { login } = useAuth()
 
 const handleLogin = async (): Promise<void> => {
-    const result = validateLoginForm({ email, password });
+    const result = validateLoginForm({ username, password });
     if (!result.success) {
         Alert.alert('Error', getZodErrorMessage(result.error));
         return;
     }
     
     try {
-        await login(email, password);
+        await login(username, password);
         // Navigation happens automatically via AuthContext and AppNavigator
         
     } catch (error: any) {
         console.error('Login error:', error);
-        const errorMessage = getFirebaseErrorMessage(error.code);
-        Alert.alert('Error', errorMessage);
+        if (error.message === 'Username not found') {
+            Alert.alert('Error', 'Username not found. Please check your username or register for a new account.');
+        } else {
+            const errorMessage = getFirebaseErrorMessage(error.code);
+            Alert.alert('Error', errorMessage);
+        }
     }
 }
 
@@ -46,11 +50,10 @@ return (
         <View style={authStyles.form}>
             <TextInput
                 style={authStyles.input}
-                placeholder="Email"
+                placeholder="Username"
                 placeholderTextColor="#888"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
+                value={username}
+                onChangeText={setUsername}
                 autoCapitalize="none"
             />
 

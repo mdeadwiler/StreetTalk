@@ -11,6 +11,14 @@ const passwordSchema = z
   .min(1, 'Password is required')
   .min(12, 'Password should be at least 12 characters');
 
+// Username schema
+const usernameSchema = z
+  .string()
+  .min(1, 'Username is required')
+  .min(4, 'Username must be at least 4 characters')
+  .max(12, 'Username cannot exceed 12 characters')
+  .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores');
+
 // Post content schema
 const postContentSchema = z
   .string()
@@ -20,13 +28,14 @@ const postContentSchema = z
 
 // Auth schemas
 export const loginSchema = z.object({
-  email: emailSchema,
+  username: usernameSchema,
   password: passwordSchema,
 });
 
 export const registerSchema = z
   .object({
     email: emailSchema,
+    username: usernameSchema,
     password: passwordSchema,
     confirmPassword: z.string().min(1, 'Please confirm your password'),
   })
