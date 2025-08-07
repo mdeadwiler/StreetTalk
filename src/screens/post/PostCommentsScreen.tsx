@@ -23,6 +23,8 @@ import {
 import { validateCreatePostForm, getZodErrorMessage } from '../../utils/zod';
 import { colors, spacing } from '../../styles/theme';
 import PostCard from '../../components/post/PostCard';
+import { withRateLimit } from '../../utils/rateLimiting';
+import BlockUserButton from '../../components/BlockUserButton';
 
 type PostCommentsScreenProps = NativeStackScreenProps<RootStackParamList, 'PostComments'>;
 
@@ -48,13 +50,13 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
     try {
       if (refresh) {
         setRefreshing(true);
-        const { comments: newComments, lastVisible: newLastVisible } = await getPaginatedComments(postId, 30);
+        const { comments: newComments, lastVisible: newLastVisible } = await getPaginatedComments(postId, 30, undefined, user?.uid);
         setComments(newComments);
         setLastVisible(newLastVisible);
         setHasMore(newComments.length === 30);
       } else {
         setLoading(true);
-        const { comments: newComments, lastVisible: newLastVisible } = await getPaginatedComments(postId, 30);
+        const { comments: newComments, lastVisible: newLastVisible } = await getPaginatedComments(postId, 30, undefined, user?.uid);
         setComments(newComments);
         setLastVisible(newLastVisible);
         setHasMore(newComments.length === 30);
@@ -72,7 +74,7 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
 
     try {
       setLoadingMore(true);
-      const { comments: newComments, lastVisible: newLastVisible } = await getPaginatedComments(postId, 30, lastVisible);
+      const { comments: newComments, lastVisible: newLastVisible } = await getPaginatedComments(postId, 30, lastVisible, user?.uid);
       
       if (newComments.length > 0) {
         setComments(prev => [...prev, ...newComments]);
@@ -114,13 +116,19 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
 
     setSubmitting(true);
     try {
-      await createComment(postId, user.uid, userProfile.username, newComment);
+      // Apply rate limiting to prevent spam commenting
+      await withRateLimit(user.uid, 'COMMENT_CREATION', async () => {
+        return createComment(postId, user.uid, userProfile.username, newComment);
+      });
+      
       setNewComment('');
       // Refresh comments to show the new one
       loadComments(true);
     } catch (error) {
       console.error('Error creating comment:', error);
-      Alert.alert('Error', 'Failed to post comment. Please try again.');
+      // Show specific rate limiting message if available
+      const errorMessage = error instanceof Error ? error.message : 'Failed to post comment. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -196,12 +204,21 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
         renderItem={({ item: comment }) => (
           <View style={styles.commentCard}>
             <View style={styles.commentHeader}>
-              <Text style={styles.commentAuthor}>
-                @{comment.username}
-              </Text>
-              <Text style={styles.commentTime}>
-                {formatTimestamp(comment.createdAt)}
-              </Text>
+              <View style={styles.commentAuthorSection}>
+                <Text style={styles.commentAuthor}>
+                  @{comment.username}
+                </Text>
+                <Text style={styles.commentTime}>
+                  {formatTimestamp(comment.createdAt)}
+                </Text>
+              </View>
+              
+              {/* Block User Button for Comments */}
+              <BlockUserButton 
+                targetUserId={comment.userId}
+                targetUsername={comment.username}
+                compact={true}
+              />
             </View>
             <Text style={styles.commentContent}>{comment.content}</Text>
           </View>
@@ -327,6 +344,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xs,
   },
+  commentAuthorSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   commentAuthor: {
     fontSize: 14,
     fontWeight: 'bold',
@@ -335,6 +357,7 @@ const styles = StyleSheet.create({
   commentTime: {
     fontSize: 12,
     color: colors.mutedText,
+    marginLeft: spacing.sm,
   },
   commentContent: {
     fontSize: 14,

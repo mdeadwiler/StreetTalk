@@ -1,10 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types';
 import { colors, spacing } from '../../styles/theme';
+
+type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function SettingsScreen() {
   const { logout, user, userProfile } = useAuth();
+  const navigation = useNavigation<SettingsScreenNavigationProp>();
 
   const handleLogout = async () => {
     Alert.alert(
@@ -65,6 +71,19 @@ export default function SettingsScreen() {
             <Text style={styles.label}>Email</Text>
             <Text style={styles.value}>{userProfile?.email}</Text>
           </View>
+        </View>
+
+        {/* Privacy Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Privacy</Text>
+          
+          <TouchableOpacity 
+            style={styles.settingItem} 
+            onPress={() => navigation.navigate('BlockedUsers')}
+          >
+            <Text style={styles.settingText}>Blocked Users</Text>
+            <Text style={styles.arrow}>→</Text>
+          </TouchableOpacity>
         </View>
 
         {/* App Section */}

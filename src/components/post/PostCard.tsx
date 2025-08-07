@@ -4,6 +4,7 @@ import { Video, ResizeMode } from 'expo-av';
 import { Post } from '../../types';
 import { colors, spacing } from '../../styles/theme';
 import { formatTimestamp, deletePost } from '../../services/firestore';
+import BlockUserButton from '../BlockUserButton';
 
 interface PostCardProps {
   post: Post;
@@ -51,16 +52,28 @@ export default function PostCard({ post, onPress, currentUserId, onEdit, onDelet
           <Text style={styles.timestamp}>{formatTimestamp(post.createdAt)}</Text>
         </View>
         
-        {isOwner && (
-          <View style={styles.actions}>
-            <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
-              <Text style={styles.actionText}>Edit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleDelete} style={styles.actionButton}>
-              <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <View style={styles.headerActions}>
+          {/* Block User Button (for non-owners) */}
+          {!isOwner && (
+            <BlockUserButton 
+              targetUserId={post.userId}
+              targetUsername={post.username}
+              compact={true}
+            />
+          )}
+          
+          {/* Owner Actions */}
+          {isOwner && (
+            <View style={styles.actions}>
+              <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
+                <Text style={styles.actionText}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDelete} style={styles.actionButton}>
+                <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </View>
 
       {post.content && <Text style={styles.content}>{post.content}</Text>}
@@ -122,6 +135,10 @@ const styles = StyleSheet.create({
   timestamp: {
     fontSize: 12,
     color: colors.mutedText,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   actions: {
     flexDirection: 'row',

@@ -1,25 +1,60 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAuth, Auth } from "firebase/auth";
+import { initializeAuth, getReactNativePersistence, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
-// Your web app's Firebase configuration
+// Firebase configuration using environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyDKpei_gz4CpB8aobZGTAyPsHTlqgG1a28",
-  authDomain: "street-talk-c3f72.firebaseapp.com",
-  projectId: "street-talk-c3f72",
-  storageBucket: "street-talk-c3f72.firebasestorage.app",
-  messagingSenderId: "494250613125",
-  appId: "1:494250613125:web:6f386ff5d0006029e70cec",
-  measurementId: "G-PBX4DQ99FM"
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
+
+// Validate that all required config values are present
+const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+const missingKeys = requiredKeys.filter(key => !firebaseConfig[key as keyof typeof firebaseConfig]);
+
+// Debug logging for configuration (only log non-sensitive info)
+const configDebug = {
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasAppId: !!firebaseConfig.appId
+};
+console.log('Firebase Config Debug:', JSON.stringify(configDebug));
+
+if (missingKeys.length > 0) {
+  console.error('Missing Firebase configuration keys:', missingKeys);
+  throw new Error(`Missing Firebase configuration: ${missingKeys.join(', ')}. Please check your environment variables.`);
+}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase Authentication
-export const auth: Auth = getAuth(app);
+// Initialize Firebase Authentication with AsyncStorage persistence
+// Use try/catch to handle potential conflicts with Expo
+let auth: Auth;
+try {
+  // Try to use initializeAuth with persistence first
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+  });
+  console.log('Firebase Auth initialized with AsyncStorage persistence');
+} catch (error: any) {
+  // If initializeAuth fails (e.g., already initialized), fall back to getAuth
+  console.warn('initializeAuth failed, falling back to getAuth:', error.message);
+  const { getAuth } = require('firebase/auth');
+  auth = getAuth(app);
+  console.log('Firebase Auth initialized with getAuth (fallback)');
+}
+
+export { auth };
 
 // Initialize Cloud Firestore and get a reference to the service
 export const db: Firestore = getFirestore(app);

@@ -6,6 +6,7 @@ import { TabNavigator } from './TabNavigator'
 import { CreatePostScreen } from '../screens/post/CreatePostScreen'
 import { EditPostScreen } from '../screens/post/EditPostScreen'
 import PostCommentsScreen from '../screens/post/PostCommentsScreen'
+import BlockedUsersScreen from '../screens/settings/BlockedUsersScreen'
 import { useAuth } from '../context/AuthContext'
 import { ActivityIndicator, View } from 'react-native'
 import { RootStackParamList } from '../types';
@@ -33,6 +34,7 @@ export const AppNavigator = () => {
                     <Stack.Screen name='CreatePost' component={CreatePostScreen} />
                     <Stack.Screen name='EditPost' component={EditPostScreen} />
                     <Stack.Screen name='PostComments' component={PostCommentsScreen} />
+          <Stack.Screen name='BlockedUsers' component={BlockedUsersScreen} />
                 </>
             ) : ( 
                 <>

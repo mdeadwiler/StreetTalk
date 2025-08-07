@@ -27,13 +27,13 @@ export default function ProfileScreen() {
     try {
       if (refresh) {
         setRefreshing(true);
-        const { posts, lastVisible: newLastVisible } = await getPaginatedUserPosts(user.uid, 20);
+        const { posts, lastVisible: newLastVisible } = await getPaginatedUserPosts(user.uid, 20, undefined, user.uid);
         setUserPosts(posts);
         setLastVisible(newLastVisible);
         setHasMore(posts.length === 20);
       } else {
         setLoading(true);
-        const { posts, lastVisible: newLastVisible } = await getPaginatedUserPosts(user.uid, 20);
+        const { posts, lastVisible: newLastVisible } = await getPaginatedUserPosts(user.uid, 20, undefined, user.uid);
         setUserPosts(posts);
         setLastVisible(newLastVisible);
         setHasMore(posts.length === 20);
@@ -51,7 +51,7 @@ export default function ProfileScreen() {
 
     try {
       setLoadingMore(true);
-      const { posts: newPosts, lastVisible: newLastVisible } = await getPaginatedUserPosts(user.uid, 20, lastVisible);
+      const { posts: newPosts, lastVisible: newLastVisible } = await getPaginatedUserPosts(user.uid, 20, lastVisible, user.uid);
       
       if (newPosts.length > 0) {
         setUserPosts(prev => [...prev, ...newPosts]);

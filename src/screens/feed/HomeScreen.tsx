@@ -24,13 +24,13 @@ export default function HomeScreen() {
     try {
       if (refresh) {
         setRefreshing(true);
-        const { posts: newPosts, lastVisible: newLastVisible } = await getPaginatedPosts(20);
+        const { posts: newPosts, lastVisible: newLastVisible } = await getPaginatedPosts(20, undefined, user?.uid);
         setPosts(newPosts);
         setLastVisible(newLastVisible);
         setHasMore(newPosts.length === 20);
       } else {
         setLoading(true);
-        const { posts: newPosts, lastVisible: newLastVisible } = await getPaginatedPosts(20);
+        const { posts: newPosts, lastVisible: newLastVisible } = await getPaginatedPosts(20, undefined, user?.uid);
         setPosts(newPosts);
         setLastVisible(newLastVisible);
         setHasMore(newPosts.length === 20);
@@ -49,7 +49,7 @@ export default function HomeScreen() {
 
     try {
       setLoadingMore(true);
-      const { posts: newPosts, lastVisible: newLastVisible } = await getPaginatedPosts(20, lastVisible);
+      const { posts: newPosts, lastVisible: newLastVisible } = await getPaginatedPosts(20, lastVisible, user?.uid);
       
       if (newPosts.length > 0) {
         setPosts(prev => [...prev, ...newPosts]);

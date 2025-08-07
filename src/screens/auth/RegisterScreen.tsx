@@ -9,7 +9,7 @@ import {
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useAuth } from "../../context/AuthContext";
 import { RootStackParamList } from '../../types';
-import { authStyles } from '../../styles/authStyles';
+import { styles as authStyles } from '../../styles/theme';
 import { validateRegisterForm, getZodErrorMessage, getFirebaseErrorMessage } from '../../utils/zod';
 
 

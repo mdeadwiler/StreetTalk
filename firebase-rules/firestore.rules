@@ -11,6 +11,10 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
     // Enforce pagination limits to prevent cost attacks
     function hasReasonableLimit(maxLimit) {
       return request.query.limit != null
@@ -23,7 +27,7 @@ service cloud.firestore {
     function orderedByCreatedDesc() {
       return request.query.orderBy.size() == 1
              && request.query.orderBy[0].field == 'createdAt'
-             && request.query.orderBy[0].direction == 'DESC';
+             && request.query.orderBy[0].direction == 'desc';
     }
 
     // Validate string content length and presence
@@ -33,27 +37,20 @@ service cloud.firestore {
              && request.resource.data.content.size() <= maxLength;
     }
 
+
+
     /* ─────────── POSTS COLLECTION ─────────── */
     match /posts/{postId} {
       
       // READ: Single post by ID (efficient)
       allow get: if isSignedIn();
 
-      // LIST: Only paginated queries with proper ordering
-      allow list: if isSignedIn()
-                  && orderedByCreatedDesc()
-                  && hasReasonableLimit(50)  // Max 50 posts per query
-                  && (
-                    // Global feed query (all posts)
-                    request.query.where.size() == 0
-                    ||
-                    // User-specific posts query
-                    (request.query.where.size() == 1 
-                     && 'userId' in request.query.where
-                     && request.query.where.userId[0] == '==')
-                  );
+      // LIST: Step 1 - Add back authentication requirement
+      allow list: if isSignedIn();
 
       // CREATE: Only authenticated users can create posts
+      // NOTE: Rate limiting is primarily handled client-side and in application logic
+      // Firestore rules are limited for complex rate limiting across documents
       allow create: if isSignedIn()
                     && request.resource.data.userId == request.auth.uid
                     && validContent(250)  // Max 250 characters
@@ -74,9 +71,9 @@ service cloud.firestore {
                     && request.resource.data.username == resource.data.username
                     && request.resource.data.createdAt == resource.data.createdAt;
 
-      // DELETE: Only post owner can delete
+      // DELETE: Only post owner or admin can delete
       allow delete: if isSignedIn()
-                    && resource.data.userId == request.auth.uid;
+                    && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     /* ─────────── COMMENTS COLLECTION ─────────── */
@@ -89,11 +86,11 @@ service cloud.firestore {
       allow list: if isSignedIn()
                   && request.query.where.size() >= 1
                   && 'postId' in request.query.where
-                  && request.query.where.postId[0] == '=='  // Must filter by postId
                   && orderedByCreatedDesc()
                   && hasReasonableLimit(100);  // Max 100 comments per query
 
       // CREATE: Only authenticated users can comment
+      // NOTE: Rate limiting for comments is handled client-side to prevent spam
       allow create: if isSignedIn()
                     && request.resource.data.userId == request.auth.uid
                     && validContent(250)  // Max 250 characters
@@ -113,23 +110,26 @@ service cloud.firestore {
                     && request.resource.data.username == resource.data.username
                     && request.resource.data.createdAt == resource.data.createdAt;
 
-      // DELETE: Only comment owner can delete
+      // DELETE: Only comment owner or admin can delete
       allow delete: if isSignedIn()
-                    && resource.data.userId == request.auth.uid;
+                    && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     /* ─────────── USERS COLLECTION ─────────── */
     match /users/{userId} {
       
-      // READ: Single user profile (for username lookups)
+      // READ: Allow reading for authenticated users and username lookups
       allow get: if isSignedIn();
-
-      // LIST: Very restricted to prevent user enumeration attacks
-      allow list: if isSignedIn()
-                  && request.query.where.size() == 1
-                  && 'username' in request.query.where
-                  && request.query.where.username[0] == '=='  // Only username lookups
-                  && hasReasonableLimit(1);  // Only 1 result expected
+      
+      // LIST: Allow username availability checks (unauthenticated) and admin access
+      allow list: if (
+                    // Admin can list all users (when authenticated)
+                    (isSignedIn() && isAdmin() && hasReasonableLimit(100))
+                    ||
+                    // Username availability checks - specific pattern only
+                    (request.query.where.size() == 1 
+                     && request.query.limit == 1)
+                  );
 
       // CREATE: Only during registration
       allow create: if isOwner(userId)
@@ -140,12 +140,22 @@ service cloud.firestore {
                     && request.resource.data.username.size() <= 12
                     && request.resource.data.createdAt == request.time;
 
-      // UPDATE: Only user can update their own profile
-      allow update: if isOwner(userId)
-                    // Prevent modification of critical fields
-                    && request.resource.data.uid == resource.data.uid
-                    && request.resource.data.email == resource.data.email
-                    && request.resource.data.createdAt == resource.data.createdAt;
+      // UPDATE: Only user can update their own profile OR admin can update any profile
+      allow update: if (isOwner(userId)
+                        // User updating their own profile
+                        && request.resource.data.uid == resource.data.uid
+                        && request.resource.data.email == resource.data.email
+                        && request.resource.data.createdAt == resource.data.createdAt
+                        // Allow updating blocked users list for personal content filtering
+                        && (!('blockedUsers' in request.resource.data) || 
+                            request.resource.data.blockedUsers is list))
+                    ||
+                    (isAdmin()
+                        // Admin can update user roles but not core identity fields
+                        && request.resource.data.uid == resource.data.uid
+                        && request.resource.data.email == resource.data.email
+                        && request.resource.data.username == resource.data.username
+                        && request.resource.data.createdAt == resource.data.createdAt);
 
       // DELETE: Only user can delete their own profile
       allow delete: if isOwner(userId);

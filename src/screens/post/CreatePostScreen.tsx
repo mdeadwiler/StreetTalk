@@ -5,10 +5,12 @@ import { Video, ResizeMode } from 'expo-av'
 import { useAuth} from '../../context/AuthContext'
 import { RootStackParamList } from '../../types'
 import { validateCreatePostForm, getZodErrorMessage } from '../../utils/zod'
-import { authStyles } from '../../styles/authStyles'
+import { styles as authStyles } from '../../styles/theme'
 import { colors, spacing } from '../../styles/theme'
 import { createPost } from '../../services/firestore'
 import { pickMedia, takeMedia, uploadMedia, MediaResult, validateMedia } from '../../services/mediaService'
+import { withRateLimit } from '../../utils/rateLimiting'
+import RateLimitStatus from '../../components/RateLimitStatus'
 
 type CreatePostScreenProps = NativeStackScreenProps<RootStackParamList, 'CreatePost'>
 
@@ -54,7 +56,11 @@ const handleCreatePost = async () => {
       mediaType = selectedMedia.type;
     }
 
-    await createPost(user.uid, userProfile.username, content, mediaUrl, mediaType)
+    // Apply rate limiting to prevent spam posting
+    await withRateLimit(user.uid, 'POST_CREATION', async () => {
+      return createPost(user.uid, userProfile.username, content, mediaUrl, mediaType);
+    });
+    
     Alert.alert('Success', 'Post created successfully!')
     navigation.navigate('MainTabs')
   } catch (error) {
@@ -167,12 +173,15 @@ return (
           </TouchableOpacity>
         </View>
 
+        {/* Rate Limit Status */}
+        <RateLimitStatus actionType="POST_CREATION" showWarning={true} />
+
         <TouchableOpacity 
           onPress={handleCreatePost}
           disabled={(content.trim().length === 0 && !selectedMedia) || isOverLimit || uploading}
           style={[
             authStyles.button,
-            { marginTop: 20, width: '60%', paddingVertical: 12 },
+            { marginTop: 20, paddingVertical: 12 },
             ((content.trim().length === 0 && !selectedMedia) || isOverLimit || uploading) && authStyles.buttonDisabled
           ]}
         >

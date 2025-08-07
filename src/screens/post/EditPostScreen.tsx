@@ -4,7 +4,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList } from '../../types';
 import { validateCreatePostForm, getZodErrorMessage } from '../../utils/zod';
-import { authStyles } from '../../styles/authStyles';
+import { styles as authStyles } from '../../styles/theme';
 import { colors } from '../../styles/theme';
 import { getPost, updatePost } from '../../services/firestore';
 
@@ -141,7 +141,7 @@ export const EditPostScreen = ({ route, navigation }: EditPostScreenProps) => {
           disabled={content.trim().length === 0 || isOverLimit}
           style={[
             authStyles.button,
-            { marginTop: 20, width: '60%', paddingVertical: 12 },
+            { marginTop: 20, paddingVertical: 12 },
             (content.trim().length === 0 || isOverLimit) && authStyles.buttonDisabled
           ]}
         >

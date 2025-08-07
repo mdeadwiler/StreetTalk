@@ -6,7 +6,9 @@ import {
   setDoc, 
   query, 
   where,
-  serverTimestamp
+  limit,
+  serverTimestamp,
+  updateDoc
 } from 'firebase/firestore';
 import { db } from '../utils/firebaseConfig';
 import { UserProfile } from '../types';
@@ -43,14 +45,22 @@ export const createUserProfile = async (
 // Check if username is available
 export const isUsernameAvailable = async (username: string): Promise<boolean> => {
   try {
+    console.log('Checking username availability for:', username.toLowerCase());
     const q = query(
       collection(db, 'users'), 
-      where('username', '==', username.toLowerCase())
+      where('username', '==', username.toLowerCase()),
+      limit(1)  // Required by Firestore security rules
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.empty;
-  } catch (error) {
+    const isAvailable = querySnapshot.empty;
+    console.log('Username availability result:', { username: username.toLowerCase(), isAvailable });
+    return isAvailable;
+  } catch (error: any) {
     console.error('Error checking username availability:', error);
+    if (error.code === 'permission-denied') {
+      console.error('Permission denied - check Firestore security rules');
+      throw new Error('Unable to check username availability. Please try again later.');
+    }
     throw error;
   }
 };
@@ -60,7 +70,8 @@ export const getUserByUsername = async (username: string): Promise<UserProfile |
   try {
     const q = query(
       collection(db, 'users'), 
-      where('username', '==', username.toLowerCase())
+      where('username', '==', username.toLowerCase()),
+      limit(1)  // Add limit for consistency and efficiency
     );
     const querySnapshot = await getDocs(q);
     
@@ -99,39 +110,66 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   }
 };
 
-// Validate username format (using secure validation)
-export const validateUsername = (username: string): { isValid: boolean; error?: string } => {
-  return validateUsernameSecure(username);
+// ADMIN FUNCTIONS
+
+// Check if user is admin
+export const isUserAdmin = async (uid: string): Promise<boolean> => {
+  try {
+    const userProfile = await getUserProfile(uid);
+    return userProfile?.isAdmin === true || userProfile?.role === 'admin';
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
 };
 
-// Generate available username suggestions
-export const generateUsernameSuggestions = async (baseUsername: string): Promise<string[]> => {
-  const suggestions: string[] = [];
-  const base = baseUsername.toLowerCase().slice(0, 8); // Ensure we don't exceed length limit
-  
-  for (let i = 1; i <= 5; i++) {
-    const suggestion = `${base}${i}`;
-    if (suggestion.length <= 12) {
-      const isAvailable = await isUsernameAvailable(suggestion);
-      if (isAvailable) {
-        suggestions.push(suggestion);
-      }
-    }
+// Set user as admin (only for initial setup)
+export const setUserAsAdmin = async (uid: string): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      role: 'admin',
+      isAdmin: true
+    });
+    console.log(`User ${uid} has been granted admin privileges`);
+  } catch (error) {
+    console.error('Error setting user as admin:', error);
+    throw error;
   }
-  
-  // Add random suffix if no numbered suggestions are available
-  if (suggestions.length === 0) {
-    for (let i = 0; i < 3; i++) {
-      const randomSuffix = Math.floor(Math.random() * 999);
-      const suggestion = `${base.slice(0, 8)}${randomSuffix}`;
-      if (suggestion.length <= 12) {
-        const isAvailable = await isUsernameAvailable(suggestion);
-        if (isAvailable) {
-          suggestions.push(suggestion);
-        }
-      }
-    }
+};
+
+// Remove admin privileges
+export const removeAdminPrivileges = async (uid: string): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      role: 'user',
+      isAdmin: false
+    });
+    console.log(`Admin privileges removed from user ${uid}`);
+  } catch (error) {
+    console.error('Error removing admin privileges:', error);
+    throw error;
   }
-  
-  return suggestions;
+};
+
+// Get all users (admin only)
+export const getAllUsers = async (): Promise<UserProfile[]> => {
+  try {
+    const usersRef = collection(db, 'users');
+    const querySnapshot = await getDocs(usersRef);
+    
+    const users: UserProfile[] = [];
+    querySnapshot.forEach((doc) => {
+      users.push({
+        uid: doc.id,
+        ...doc.data()
+      } as UserProfile);
+    });
+    
+    return users;
+  } catch (error) {
+    console.error('Error getting all users:', error);
+    throw error;
+  }
 };

@@ -253,8 +253,14 @@ export const deleteComment = async (commentId: string, postId: string): Promise<
   }
 };
 
+// Helper function to filter out blocked users' content
+const filterBlockedContent = <T extends { userId: string }>(content: T[], blockedUsers: string[]): T[] => {
+  if (blockedUsers.length === 0) return content;
+  return content.filter(item => !blockedUsers.includes(item.userId));
+};
+
 // Paginated posts fetching to replace expensive real-time listeners
-export const getPaginatedPosts = async (limitCount: number = 20, lastVisible?: any): Promise<{ posts: Post[], lastVisible: any }> => {
+export const getPaginatedPosts = async (limitCount: number = 20, lastVisible?: any, currentUserId?: string): Promise<{ posts: Post[], lastVisible: any }> => {
   try {
     let q = query(
       collection(db, 'posts'), 
@@ -272,10 +278,16 @@ export const getPaginatedPosts = async (limitCount: number = 20, lastVisible?: a
     }
 
     const querySnapshot = await getDocs(q);
-    const posts = querySnapshot.docs.map(doc => ({
+    let posts = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Post[];
+
+    // Filter out blocked users' posts if currentUserId is provided
+    if (currentUserId) {
+      const blockedUsers = await getBlockedUsers(currentUserId);
+      posts = filterBlockedContent(posts, blockedUsers);
+    }
 
     const newLastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
 
@@ -286,7 +298,7 @@ export const getPaginatedPosts = async (limitCount: number = 20, lastVisible?: a
   }
 };
 
-export const getPaginatedUserPosts = async (userId: string, limitCount: number = 20, lastVisible?: any): Promise<{ posts: Post[], lastVisible: any }> => {
+export const getPaginatedUserPosts = async (userId: string, limitCount: number = 20, lastVisible?: any, currentUserId?: string): Promise<{ posts: Post[], lastVisible: any }> => {
   try {
     let q = query(
       collection(db, 'posts'), 
@@ -306,10 +318,16 @@ export const getPaginatedUserPosts = async (userId: string, limitCount: number =
     }
 
     const querySnapshot = await getDocs(q);
-    const posts = querySnapshot.docs.map(doc => ({
+    let posts = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Post[];
+
+    // Filter out blocked users' posts if currentUserId is provided and it's not the user's own posts
+    if (currentUserId && currentUserId !== userId) {
+      const blockedUsers = await getBlockedUsers(currentUserId);
+      posts = filterBlockedContent(posts, blockedUsers);
+    }
 
     const newLastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
 
@@ -338,7 +356,7 @@ export const subscribeToPostsUpdates = (callback: (posts: Post[]) => void, limit
 };
 
 // Paginated comments fetching to replace expensive real-time listeners
-export const getPaginatedComments = async (postId: string, limitCount: number = 50, lastVisible?: any): Promise<{ comments: Comment[], lastVisible: any }> => {
+export const getPaginatedComments = async (postId: string, limitCount: number = 50, lastVisible?: any, currentUserId?: string): Promise<{ comments: Comment[], lastVisible: any }> => {
   try {
     let q = query(
       collection(db, 'comments'), 
@@ -358,10 +376,16 @@ export const getPaginatedComments = async (postId: string, limitCount: number = 
     }
 
     const querySnapshot = await getDocs(q);
-    const comments = querySnapshot.docs.map(doc => ({
+    let comments = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Comment[];
+
+    // Filter out blocked users' comments if currentUserId is provided
+    if (currentUserId) {
+      const blockedUsers = await getBlockedUsers(currentUserId);
+      comments = filterBlockedContent(comments, blockedUsers);
+    }
 
     const newLastVisible = querySnapshot.docs[querySnapshot.docs.length - 1];
 
@@ -387,6 +411,74 @@ export const subscribeToCommentsUpdates = (postId: string, callback: (comments: 
     })) as Comment[];
     callback(comments);
   });
+};
+
+// User Blocking Functions
+export const blockUser = async (blockerUserId: string, blockedUserId: string): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', blockerUserId);
+    const userDoc = await getDoc(userRef);
+    
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      const currentBlockedUsers = userData.blockedUsers || [];
+      
+      if (!currentBlockedUsers.includes(blockedUserId)) {
+        await updateDoc(userRef, {
+          blockedUsers: [...currentBlockedUsers, blockedUserId]
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error blocking user:', error);
+    throw error;
+  }
+};
+
+export const unblockUser = async (blockerUserId: string, unblockedUserId: string): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', blockerUserId);
+    const userDoc = await getDoc(userRef);
+    
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      const currentBlockedUsers = userData.blockedUsers || [];
+      
+      await updateDoc(userRef, {
+        blockedUsers: currentBlockedUsers.filter((userId: string) => userId !== unblockedUserId)
+      });
+    }
+  } catch (error) {
+    console.error('Error unblocking user:', error);
+    throw error;
+  }
+};
+
+export const getBlockedUsers = async (userId: string): Promise<string[]> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      return userData.blockedUsers || [];
+    }
+    
+    return [];
+  } catch (error) {
+    console.error('Error getting blocked users:', error);
+    return [];
+  }
+};
+
+export const isUserBlocked = async (blockerUserId: string, potentiallyBlockedUserId: string): Promise<boolean> => {
+  try {
+    const blockedUsers = await getBlockedUsers(blockerUserId);
+    return blockedUsers.includes(potentiallyBlockedUserId);
+  } catch (error) {
+    console.error('Error checking if user is blocked:', error);
+    return false;
+  }
 };
 
 // Utility functions
@@ -428,4 +520,131 @@ export const checkRateLimit = (userId: string, action: string, maxActions: numbe
   actionTimestamps.set(key, validTimestamps);
   
   return true; // Action allowed
+};
+
+// ADMIN FUNCTIONS
+
+// Admin: Delete any post (bypasses ownership check)
+export const adminDeletePost = async (postId: string, adminUserId: string): Promise<void> => {
+  try {
+    console.log(`Admin ${adminUserId} deleting post ${postId}`);
+    
+    // Delete all comments for this post first
+    const commentsQuery = query(
+      collection(db, 'comments'), 
+      where('postId', '==', postId)
+    );
+    const commentsSnapshot = await getDocs(commentsQuery);
+    
+    const deleteCommentPromises = commentsSnapshot.docs.map(commentDoc => 
+      deleteDoc(doc(db, 'comments', commentDoc.id))
+    );
+    await Promise.all(deleteCommentPromises);
+    
+    // Delete the post
+    await deleteDoc(doc(db, 'posts', postId));
+    
+    console.log(`Admin deleted post ${postId} and ${commentsSnapshot.size} associated comments`);
+  } catch (error) {
+    console.error('Admin error deleting post:', error);
+    throw error;
+  }
+};
+
+// Admin: Delete any comment (bypasses ownership check)
+export const adminDeleteComment = async (commentId: string, adminUserId: string): Promise<void> => {
+  try {
+    console.log(`Admin ${adminUserId} deleting comment ${commentId}`);
+    
+    // Get comment details first
+    const commentDoc = await getDoc(doc(db, 'comments', commentId));
+    if (!commentDoc.exists()) {
+      throw new Error('Comment not found');
+    }
+    
+    const comment = commentDoc.data() as Comment;
+    
+    // Delete the comment
+    await deleteDoc(doc(db, 'comments', commentId));
+    
+    // Decrease comment count on the post
+    const postRef = doc(db, 'posts', comment.postId);
+    await updateDoc(postRef, {
+      commentsCount: increment(-1)
+    });
+    
+    console.log(`Admin deleted comment ${commentId}`);
+  } catch (error) {
+    console.error('Admin error deleting comment:', error);
+    throw error;
+  }
+};
+
+// Admin: Get all posts (no user filtering)
+export const adminGetAllPosts = async (): Promise<Post[]> => {
+  try {
+    const postsQuery = query(
+      collection(db, 'posts'),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const querySnapshot = await getDocs(postsQuery);
+    const posts: Post[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      posts.push({
+        id: doc.id,
+        ...doc.data()
+      } as Post);
+    });
+    
+    return posts;
+  } catch (error) {
+    console.error('Admin error getting all posts:', error);
+    throw error;
+  }
+};
+
+// Admin: Get user activity summary
+export const adminGetUserActivity = async (userId: string): Promise<{
+  postCount: number;
+  commentCount: number;
+  posts: Post[];
+  comments: Comment[];
+}> => {
+  try {
+    // Get user's posts
+    const postsQuery = query(
+      collection(db, 'posts'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+    const postsSnapshot = await getDocs(postsQuery);
+    const posts: Post[] = [];
+    postsSnapshot.forEach((doc) => {
+      posts.push({ id: doc.id, ...doc.data() } as Post);
+    });
+    
+    // Get user's comments
+    const commentsQuery = query(
+      collection(db, 'comments'),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+    const commentsSnapshot = await getDocs(commentsQuery);
+    const comments: Comment[] = [];
+    commentsSnapshot.forEach((doc) => {
+      comments.push({ id: doc.id, ...doc.data() } as Comment);
+    });
+    
+    return {
+      postCount: posts.length,
+      commentCount: comments.length,
+      posts,
+      comments
+    };
+  } catch (error) {
+    console.error('Admin error getting user activity:', error);
+    throw error;
+  }
 };

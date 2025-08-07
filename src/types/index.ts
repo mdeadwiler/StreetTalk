@@ -8,6 +8,7 @@ export type RootStackParamList = {
   CreatePost: undefined;
   PostComments: { postId: string };
   EditPost: { postId: string };
+  BlockedUsers: undefined;
 };
 
 export type TabParamList = {
@@ -40,6 +41,9 @@ export interface UserProfile {
   email: string;
   username: string;
   createdAt: any; // Firebase Timestamp
+  blockedUsers?: string[]; // Array of user IDs that this user has blocked
+  role?: 'admin' | 'user'; // User role - defaults to 'user'
+  isAdmin?: boolean; // Quick admin check
 }
 
 export interface Post {
