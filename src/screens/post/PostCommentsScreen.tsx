@@ -132,6 +132,28 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
     }
 
     setSubmitting(true);
+    
+    // Optimistic update: create temporary comment
+    const tempComment: Comment = {
+      id: `temp-${Date.now()}`,
+      postId: postId,
+      userId: user.uid,
+      username: userProfile.username,
+      content: newComment,
+      createdAt: new Date(),
+    };
+    
+    // Add optimistic comment to the list
+    setComments(prev => [tempComment, ...prev]);
+    
+    // Update post comment count optimistically
+    if (post) {
+      setPost(prev => prev ? { ...prev, commentsCount: prev.commentsCount + 1 } : null);
+    }
+    
+    const originalComments = comments;
+    const originalPost = post;
+    
     try {
       // Apply rate limiting to prevent spam commenting
       await withRateLimit(user.uid, 'COMMENT_CREATION', async () => {
@@ -139,9 +161,15 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
       });
       
       setNewComment('');
-      // Refresh comments to show the new one
+      // Refresh comments to get the real comment with proper ID
       loadComments(true);
+      // Reload post to get updated comment count
+      loadPost();
     } catch (error) {
+      // Revert optimistic updates on error
+      setComments(originalComments);
+      setPost(originalPost);
+      
       console.error('Error creating comment:', error);
       // Show specific rate limiting message if available
       const errorMessage = error instanceof Error ? error.message : 'Failed to post comment. Please try again.';
@@ -149,6 +177,47 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!user) return;
+
+    Alert.alert(
+      'Delete Comment',
+      'Are you sure you want to delete this comment?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: async () => {
+            // Optimistic update: remove comment from list
+            const originalComments = comments;
+            const originalPost = post;
+            
+            setComments(prev => prev.filter(c => c.id !== commentId));
+            
+            // Update post comment count optimistically
+            if (post) {
+              setPost(prev => prev ? { ...prev, commentsCount: prev.commentsCount - 1 } : null);
+            }
+            
+            try {
+              await deleteComment(commentId, postId);
+              // Refresh to ensure consistency
+              loadPost();
+            } catch (error) {
+              // Revert optimistic updates on error
+              setComments(originalComments);
+              setPost(originalPost);
+              
+              console.error('Error deleting comment:', error);
+              Alert.alert('Error', 'Failed to delete comment. Please try again.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const characterCount = newComment.length;
@@ -232,12 +301,24 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
                 </Text>
               </View>
               
-              {/* Block User Button for Comments */}
-              <BlockUserButton 
-                targetUserId={comment.userId}
-                targetUsername={comment.username}
-                compact={true}
-              />
+              <View style={styles.commentActions}>
+                {/* Delete Button - only show for comment author */}
+                {comment.userId === user?.uid && (
+                  <TouchableOpacity
+                    onPress={() => handleDeleteComment(comment.id)}
+                    style={styles.deleteButton}
+                  >
+                    <Text style={styles.deleteButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                )}
+                
+                {/* Block User Button for Comments */}
+                <BlockUserButton 
+                  targetUserId={comment.userId}
+                  targetUsername={comment.username}
+                  compact={true}
+                />
+              </View>
             </View>
             <Text style={styles.commentContent}>{comment.content}</Text>
           </View>
@@ -376,6 +457,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
     lineHeight: 20,
+  },
+  commentActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  deleteButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    backgroundColor: colors.mutedText,
+    borderRadius: 4,
+  },
+  deleteButtonText: {
+    color: colors.background,
+    fontSize: 12,
+    fontWeight: '500',
   },
   inputSection: {
     backgroundColor: colors.cardBackground,
