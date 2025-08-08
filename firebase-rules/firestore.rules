@@ -12,7 +12,8 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      // Simplified: Check if user has admin claim (set via custom claims, not Firestore)
+      return isSignedIn() && request.auth.token.admin == true;
     }
 
     // Enforce pagination limits to prevent cost attacks
@@ -95,25 +96,41 @@ service cloud.firestore {
       // READ: Single comment by ID
       allow get: if isSignedIn();
 
-      // LIST: Step 2 - Ultra permissive for post deletion to work
-      allow list: if isSignedIn();
+      // LIST: Allow listing comments for viewing and post deletion
+      allow list: if isSignedIn()
+                  && hasReasonableLimit(50)
+                  && request.query.where.size() == 1
+                  && request.query.where[0].field == 'postId'
+                  && request.query.where[0].operator == '==';
 
-      // CREATE: Ultra permissive for debugging
-      allow create: if true;
+      // CREATE: Secure comment creation with validation
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.postId is string
+                    && request.resource.data.postId.size() > 0
+                    && validContent(250)  // Max 250 characters
+                    && request.resource.data.username is string
+                    && request.resource.data.username.size() >= 4
+                    && request.resource.data.username.size() <= 12
+                    && request.resource.data.createdAt == request.time;
 
       // UPDATE: Only comment owner can update
       allow update: if isSignedIn()
                     && resource.data.userId == request.auth.uid
                     && validContent(250)
+                    && request.resource.data.updatedAt == request.time
                     // Prevent modification of system fields
                     && request.resource.data.userId == resource.data.userId
                     && request.resource.data.postId == resource.data.postId
                     && request.resource.data.username == resource.data.username
                     && request.resource.data.createdAt == resource.data.createdAt;
 
-      // DELETE: Only comment owner or admin can delete
+      // DELETE: Comment owner, admin, or post owner deleting comments with their post
       allow delete: if isSignedIn()
-                    && (resource.data.userId == request.auth.uid || isAdmin());
+                    && (resource.data.userId == request.auth.uid 
+                        || isAdmin()
+                        || (exists(/databases/$(database)/documents/posts/$(resource.data.postId))
+                            && get(/databases/$(database)/documents/posts/$(resource.data.postId)).data.userId == request.auth.uid));
     }
 
     /* ─────────── USERS COLLECTION ─────────── */
@@ -122,14 +139,13 @@ service cloud.firestore {
       // READ: Allow reading for authenticated users and username lookups
       allow get: if isSignedIn();
       
-      // LIST: Allow username availability checks (unauthenticated) and admin access
+      // LIST: Allow username lookups (for availability and login) and admin access
       allow list: if (
                     // Admin can list all users (when authenticated)
                     (isSignedIn() && isAdmin() && hasReasonableLimit(100))
                     ||
-                    // Username availability checks - specific pattern only
-                    (request.query.where.size() == 1 
-                     && request.query.limit == 1)
+                    // Username lookups - for availability checks and login
+                    (request.query.limit == 1)
                   );
 
       // CREATE: Only during registration

@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { initializeAuth, getReactNativePersistence, Auth } from "firebase/auth";
+import { initializeAuth, Auth, getAuth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
@@ -37,22 +37,10 @@ if (missingKeys.length > 0) {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase Authentication with AsyncStorage persistence
-// Use try/catch to handle potential conflicts with Expo
-let auth: Auth;
-try {
-  // Try to use initializeAuth with persistence first
-  auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(ReactNativeAsyncStorage)
-  });
-  console.log('Firebase Auth initialized with AsyncStorage persistence');
-} catch (error: any) {
-  // If initializeAuth fails (e.g., already initialized), fall back to getAuth
-  console.warn('initializeAuth failed, falling back to getAuth:', error.message);
-  const { getAuth } = require('firebase/auth');
-  auth = getAuth(app);
-  console.log('Firebase Auth initialized with getAuth (fallback)');
-}
+// Initialize Firebase Authentication
+// Note: Firebase v12 handles persistence automatically on React Native
+const auth: Auth = getAuth(app);
+console.log('Firebase Auth initialized');
 
 export { auth };
 

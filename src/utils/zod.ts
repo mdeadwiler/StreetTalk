@@ -44,9 +44,13 @@ const postContentSchema = z
   .max(250, 'Post cannot exceed 250 characters');
 
 // Auth schemas
+// More permissive schemas for login (just basic validation)
+const loginUsernameSchema = z.string().min(1, 'Please enter your username');
+const loginPasswordSchema = z.string().min(1, 'Please enter your password');
+
 export const loginSchema = z.object({
-  username: usernameSchema,
-  password: passwordSchema,
+  username: loginUsernameSchema,
+  password: loginPasswordSchema,
 });
 
 export const registerSchema = z
