@@ -69,6 +69,16 @@ export default function HomeScreen() {
     loadPosts();
   }, []);
 
+  // Add navigation listener to refresh when returning to this screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Refresh posts when screen comes into focus (after creating/editing posts)
+      loadPosts();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   const handleLogout = async () => {
     try {
       await logout();

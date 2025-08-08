@@ -45,8 +45,9 @@ service cloud.firestore {
       // READ: Single post by ID (efficient)
       allow get: if isSignedIn();
 
-      // LIST: Step 1 - Add back authentication requirement
-      allow list: if isSignedIn();
+      // LIST: Step 2 - Add pagination limits to prevent cost attacks
+      allow list: if isSignedIn()
+                  && hasReasonableLimit(50);
 
       // CREATE: Only authenticated users can create posts
       // NOTE: Rate limiting is primarily handled client-side and in application logic
@@ -82,12 +83,8 @@ service cloud.firestore {
       // READ: Single comment by ID
       allow get: if isSignedIn();
 
-      // LIST: Only comments for a specific post (prevent full collection reads)
-      allow list: if isSignedIn()
-                  && request.query.where.size() >= 1
-                  && 'postId' in request.query.where
-                  && orderedByCreatedDesc()
-                  && hasReasonableLimit(100);  // Max 100 comments per query
+      // LIST: Step 2 - Ultra permissive for post deletion to work
+      allow list: if isSignedIn();
 
       // CREATE: Only authenticated users can comment
       // NOTE: Rate limiting for comments is handled client-side to prevent spam

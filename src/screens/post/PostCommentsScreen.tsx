@@ -46,6 +46,17 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
     loadComments();
   }, [postId]);
 
+  // Add navigation listener to refresh when returning to this screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Refresh post and comments when screen comes into focus
+      loadPost();
+      loadComments(true);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   const loadComments = async (refresh = false) => {
     try {
       if (refresh) {
