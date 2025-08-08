@@ -264,17 +264,11 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
           </Text>
           
           <TouchableOpacity
-            style={[
-              styles.submitButton,
-              (newComment.trim().length === 0 || submitting) && styles.submitButtonDisabled
-            ]}
+            style={styles.submitButton}
             onPress={handleSubmitComment}
             disabled={newComment.trim().length === 0 || submitting}
           >
-            <Text style={[
-              styles.submitButtonText,
-              (newComment.trim().length === 0 || submitting) && styles.submitButtonTextDisabled
-            ]}>
+            <Text style={styles.submitButtonText}>
               {submitting ? 'Posting...' : 'Post'}
             </Text>
           </TouchableOpacity>
