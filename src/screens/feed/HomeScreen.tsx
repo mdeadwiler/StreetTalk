@@ -96,6 +96,11 @@ export default function HomeScreen() {
     navigation.navigate('CreatePost');
   };
 
+  const handleDeletePost = (postId: string) => {
+    // Immediately remove post from UI (optimistic update)
+    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -147,6 +152,7 @@ export default function HomeScreen() {
             onPress={() => navigation.navigate('PostComments', { postId: item.id })}
             currentUserId={user?.uid}
             onEdit={() => navigation.navigate('EditPost', { postId: item.id })}
+            onDelete={() => handleDeletePost(item.id)}
           />
         )}
       />

@@ -101,6 +101,11 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
     }
   };
 
+  const handleDeletePost = () => {
+    // If the main post is deleted, navigate back to previous screen
+    navigation.goBack();
+  };
+
   const loadPost = async () => {
     try {
       const postData = await getPost(postId);
@@ -182,6 +187,8 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
                   post={post} 
                   onPress={() => {}} 
                   currentUserId={user?.uid}
+                  onEdit={() => navigation.navigate('EditPost', { postId: post.id })}
+                  onDelete={handleDeletePost}
                 />
               </View>
             )}
