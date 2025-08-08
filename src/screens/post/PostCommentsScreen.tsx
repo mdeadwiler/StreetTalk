@@ -18,6 +18,7 @@ import {
   getPost, 
   getPaginatedComments, 
   createComment,
+  deleteComment,
   formatTimestamp 
 } from '../../services/firestore';
 import { validateCreatePostForm, getZodErrorMessage } from '../../utils/zod';
