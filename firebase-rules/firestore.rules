@@ -24,12 +24,6 @@ service cloud.firestore {
              && request.query.limit > 0;
     }
 
-    // Ensure queries are properly ordered for efficient indexing
-    function orderedByCreatedDesc() {
-      return request.query.orderBy.size() == 1
-             && request.query.orderBy[0].field == 'createdAt'
-             && request.query.orderBy[0].direction == 'desc';
-    }
 
     // Validate string content length and presence
     function validContent(maxLength) {
@@ -144,8 +138,11 @@ service cloud.firestore {
                     // Admin can list all users (when authenticated)
                     (isSignedIn() && isAdmin() && hasReasonableLimit(100))
                     ||
-                    // Username lookups - for availability checks and login
-                    (request.query.limit == 1)
+                    // Username lookups - for availability checks and login (UNAUTHENTICATED ACCESS)
+                    (request.query.limit == 1 
+                     && request.query.where.size() == 1
+                     && request.query.where[0].field == 'username'
+                     && request.query.where[0].operator == '==')
                   );
 
       // CREATE: Only during registration
