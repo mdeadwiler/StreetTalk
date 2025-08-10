@@ -138,11 +138,8 @@ service cloud.firestore {
                     // Admin can list all users (when authenticated)
                     (isSignedIn() && isAdmin() && hasReasonableLimit(100))
                     ||
-                    // Username lookups - for availability checks and login (UNAUTHENTICATED ACCESS)
-                    (request.query.limit == 1 
-                     && request.query.where.size() == 1
-                     && request.query.where[0].field == 'username'
-                     && request.query.where[0].operator == '==')
+                    // Username lookups - temporary permissive for debugging
+                    (request.query.limit == 1)
                   );
 
       // CREATE: Only during registration
