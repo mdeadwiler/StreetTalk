@@ -230,8 +230,12 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
     >
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('MainTabs')}
+          style={styles.backButtonContainer}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.backButton}>← Back to Posts</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Comments</Text>
         <View style={{ width: 60 }} />
@@ -374,6 +378,10 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderColor,
+  },
+  backButtonContainer: {
+    padding: spacing.xs,
+    borderRadius: 8,
   },
   backButton: {
     fontSize: 16,

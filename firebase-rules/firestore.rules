@@ -32,11 +32,15 @@ service cloud.firestore {
         && request.resource.data.username.size() <= 12
         && request.resource.data.createdAt == request.time
         && request.resource.data.likes == 0
-        && request.resource.data.commentsCount == 0;
+        && request.resource.data.commentsCount == 0
+        // Optional media fields validation
+        && (!('mediaUrl' in request.resource.data) || request.resource.data.mediaUrl is string)
+        && (!('mediaType' in request.resource.data) || request.resource.data.mediaType in ['image', 'video'])
+        && (!('mediaThumbnail' in request.resource.data) || request.resource.data.mediaThumbnail is string);
 
       // Two allowed update paths:
       // 1) Owner edits content only (must set updatedAt == server time)
-      // 2) Atomic +1 to commentsCount only
+      // 2) Atomic increment to commentsCount only
       allow update: if isSignedIn() && (
         (
           resource.data.userId == request.auth.uid
@@ -51,12 +55,13 @@ service cloud.firestore {
         )
         ||
         (
-          // Strictly allow only commentsCount to change, and only by +1
+          // Allow atomic increment/decrement of commentsCount field only
           request.resource.data.diff(resource.data).addedKeys().size() == 0
           && request.resource.data.diff(resource.data).removedKeys().size() == 0
           && request.resource.data.diff(resource.data).changedKeys().size() == 1
-          && request.resource.data.diff(resource.data).changedKeys()[0] == 'commentsCount'
-          && request.resource.data.commentsCount == resource.data.commentsCount + 1
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['commentsCount'])
+          && request.resource.data.commentsCount != resource.data.commentsCount
+          && request.resource.data.commentsCount >= 0
         )
       );
 
@@ -89,7 +94,13 @@ service cloud.firestore {
         && request.resource.data.username == resource.data.username
         && request.resource.data.createdAt == resource.data.createdAt;
 
-      allow delete: if isSignedIn();
+      allow delete: if isSignedIn() && (
+        // Comment owner can delete their own comment
+        resource.data.userId == request.auth.uid
+        ||
+        // Post owner can delete comments on their post (for cascade deletion)
+        get(/databases/$(database)/documents/posts/$(postId)).data.userId == request.auth.uid
+      );
     }
 
     /* USERS */

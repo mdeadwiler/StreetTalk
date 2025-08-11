@@ -229,21 +229,10 @@ export const createComment = async (
       createdAt: serverTimestamp()
     });
     
-    // Increment comments count on post - using atomic increment which should work with rules
+    // Increment comments count on post using atomic increment
     const postRef = doc(db, 'posts', postId);
-    
-    // Get current post data first to ensure we have the exact current count
-    const currentPost = await getDoc(postRef);
-    if (!currentPost.exists()) {
-      throw new Error('Post not found');
-    }
-    
-    const currentData = currentPost.data();
-    const newCommentsCount = (currentData.commentsCount || 0) + 1;
-    
-    // Update with exact field changes to match rules
     await updateDoc(postRef, {
-      commentsCount: newCommentsCount
+      commentsCount: increment(1)
     });
     
     return docRef.id;
@@ -291,21 +280,10 @@ export const deleteComment = async (commentId: string, postId: string): Promise<
     const docRef = doc(db, 'posts', postId, 'comments', commentId);
     await deleteDoc(docRef);
     
-    // Decrement comments count on post
+    // Decrement comments count on post using atomic decrement
     const postRef = doc(db, 'posts', postId);
-    
-    // Get current post data first to ensure we have the exact current count
-    const currentPost = await getDoc(postRef);
-    if (!currentPost.exists()) {
-      throw new Error('Post not found');
-    }
-    
-    const currentData = currentPost.data();
-    const newCommentsCount = Math.max(0, (currentData.commentsCount || 0) - 1);
-    
-    // Update with exact field changes to match rules
     await updateDoc(postRef, {
-      commentsCount: newCommentsCount
+      commentsCount: increment(-1)
     });
   } catch (error) {
     console.error('Error deleting comment:', error);
