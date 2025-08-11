@@ -111,9 +111,29 @@ export const getPost = async (postId: string): Promise<Post | null> => {
 export const updatePost = async (postId: string, content: string): Promise<void> => {
   try {
     const docRef = doc(db, 'posts', postId);
+    
+    // First get the current post data to preserve all fields
+    const currentPost = await getDoc(docRef);
+    if (!currentPost.exists()) {
+      throw new Error('Post not found');
+    }
+    
+    const currentData = currentPost.data();
+    
+    // Update with all existing fields preserved (rules require this)
     await updateDoc(docRef, {
       content: sanitizeUserContent(content),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
+      // Preserve all other fields exactly as they are
+      userId: currentData.userId,
+      username: currentData.username,
+      createdAt: currentData.createdAt,
+      likes: currentData.likes,
+      commentsCount: currentData.commentsCount,
+      // Preserve media fields if they exist
+      ...(currentData.mediaUrl && { mediaUrl: currentData.mediaUrl }),
+      ...(currentData.mediaType && { mediaType: currentData.mediaType }),
+      ...(currentData.mediaThumbnail && { mediaThumbnail: currentData.mediaThumbnail })
     });
   } catch (error) {
     console.error('Error updating post:', error);
@@ -123,11 +143,31 @@ export const updatePost = async (postId: string, content: string): Promise<void>
 
 export const deletePost = async (postId: string): Promise<void> => {
   try {
-    // First delete all comments for this post
-    const commentsQuery = query(collection(db, 'comments'), where('postId', '==', postId));
-    const commentsSnapshot = await getDocs(commentsQuery);
-    const deletePromises = commentsSnapshot.docs.map(doc => deleteDoc(doc.ref));
-    await Promise.all(deletePromises);
+    // First delete all nested comments for this post
+    // Add limit to comply with security rules
+    const commentsQuery = query(
+      collection(db, 'posts', postId, 'comments'),
+      limit(50)
+    );
+    let hasMoreComments = true;
+    
+    // Delete comments in batches to handle large numbers
+    while (hasMoreComments) {
+      const commentsSnapshot = await getDocs(commentsQuery);
+      
+      if (commentsSnapshot.empty) {
+        hasMoreComments = false;
+        break;
+      }
+      
+      const deletePromises = commentsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+      
+      // If we got fewer than the limit, we're done
+      if (commentsSnapshot.docs.length < 50) {
+        hasMoreComments = false;
+      }
+    }
     
     // Then delete the post
     const docRef = doc(db, 'posts', postId);
@@ -180,8 +220,8 @@ export const createComment = async (
   content: string
 ): Promise<string> => {
   try {
-    // Add comment
-    const docRef = await addDoc(collection(db, 'comments'), {
+    // Add comment to nested collection
+    const docRef = await addDoc(collection(db, 'posts', postId, 'comments'), {
       postId,
       content: sanitizeUserContent(content),
       userId,
@@ -189,10 +229,21 @@ export const createComment = async (
       createdAt: serverTimestamp()
     });
     
-    // Increment comments count on post
+    // Increment comments count on post - using atomic increment which should work with rules
     const postRef = doc(db, 'posts', postId);
+    
+    // Get current post data first to ensure we have the exact current count
+    const currentPost = await getDoc(postRef);
+    if (!currentPost.exists()) {
+      throw new Error('Post not found');
+    }
+    
+    const currentData = currentPost.data();
+    const newCommentsCount = (currentData.commentsCount || 0) + 1;
+    
+    // Update with exact field changes to match rules
     await updateDoc(postRef, {
-      commentsCount: increment(1)
+      commentsCount: newCommentsCount
     });
     
     return docRef.id;
@@ -205,16 +256,14 @@ export const createComment = async (
 export const getPostComments = async (postId: string, limitCount: number = 50, lastVisible?: any): Promise<{comments: Comment[], lastVisible: any}> => {
   try {
     let q = query(
-      collection(db, 'comments'), 
-      where('postId', '==', postId),
+      collection(db, 'posts', postId, 'comments'), 
       orderBy('createdAt', 'desc'),
       limit(limitCount)
     );
     
     if (lastVisible) {
       q = query(
-        collection(db, 'comments'), 
-        where('postId', '==', postId),
+        collection(db, 'posts', postId, 'comments'), 
         orderBy('createdAt', 'desc'),
         startAfter(lastVisible),
         limit(limitCount)
@@ -238,14 +287,25 @@ export const getPostComments = async (postId: string, limitCount: number = 50, l
 
 export const deleteComment = async (commentId: string, postId: string): Promise<void> => {
   try {
-    // Delete comment
-    const docRef = doc(db, 'comments', commentId);
+    // Delete comment from nested collection
+    const docRef = doc(db, 'posts', postId, 'comments', commentId);
     await deleteDoc(docRef);
     
     // Decrement comments count on post
     const postRef = doc(db, 'posts', postId);
+    
+    // Get current post data first to ensure we have the exact current count
+    const currentPost = await getDoc(postRef);
+    if (!currentPost.exists()) {
+      throw new Error('Post not found');
+    }
+    
+    const currentData = currentPost.data();
+    const newCommentsCount = Math.max(0, (currentData.commentsCount || 0) - 1);
+    
+    // Update with exact field changes to match rules
     await updateDoc(postRef, {
-      commentsCount: increment(-1)
+      commentsCount: newCommentsCount
     });
   } catch (error) {
     console.error('Error deleting comment:', error);
@@ -359,16 +419,14 @@ export const subscribeToPostsUpdates = (callback: (posts: Post[]) => void, limit
 export const getPaginatedComments = async (postId: string, limitCount: number = 50, lastVisible?: any, currentUserId?: string): Promise<{ comments: Comment[], lastVisible: any }> => {
   try {
     let q = query(
-      collection(db, 'comments'), 
-      where('postId', '==', postId),
+      collection(db, 'posts', postId, 'comments'), 
       orderBy('createdAt', 'desc'),
       limit(limitCount)
     );
 
     if (lastVisible) {
       q = query(
-        collection(db, 'comments'), 
-        where('postId', '==', postId),
+        collection(db, 'posts', postId, 'comments'), 
         orderBy('createdAt', 'desc'),
         startAfter(lastVisible),
         limit(limitCount)
@@ -398,8 +456,7 @@ export const getPaginatedComments = async (postId: string, limitCount: number = 
 
 export const subscribeToCommentsUpdates = (postId: string, callback: (comments: Comment[]) => void, limitCount: number = 50) => {
   const q = query(
-    collection(db, 'comments'), 
-    where('postId', '==', postId),
+    collection(db, 'posts', postId, 'comments'), 
     orderBy('createdAt', 'desc'),
     limit(limitCount)  // Limit comments listener to prevent cost attacks
   );
@@ -529,22 +586,41 @@ export const adminDeletePost = async (postId: string, adminUserId: string): Prom
   try {
     console.log(`Admin ${adminUserId} deleting post ${postId}`);
     
-    // Delete all comments for this post first
+    // Delete all nested comments for this post first
+    // Add limit to comply with security rules
     const commentsQuery = query(
-      collection(db, 'comments'), 
-      where('postId', '==', postId)
+      collection(db, 'posts', postId, 'comments'),
+      limit(50)
     );
-    const commentsSnapshot = await getDocs(commentsQuery);
+    let hasMoreComments = true;
+    let totalDeleted = 0;
     
-    const deleteCommentPromises = commentsSnapshot.docs.map(commentDoc => 
-      deleteDoc(doc(db, 'comments', commentDoc.id))
-    );
-    await Promise.all(deleteCommentPromises);
+    // Delete comments in batches to handle large numbers
+    while (hasMoreComments) {
+      const commentsSnapshot = await getDocs(commentsQuery);
+      
+      if (commentsSnapshot.empty) {
+        hasMoreComments = false;
+        break;
+      }
+      
+      const deleteCommentPromises = commentsSnapshot.docs.map(commentDoc => 
+        deleteDoc(commentDoc.ref)
+      );
+      await Promise.all(deleteCommentPromises);
+      
+      totalDeleted += commentsSnapshot.docs.length;
+      
+      // If we got fewer than the limit, we're done
+      if (commentsSnapshot.docs.length < 50) {
+        hasMoreComments = false;
+      }
+    }
     
     // Delete the post
     await deleteDoc(doc(db, 'posts', postId));
     
-    console.log(`Admin deleted post ${postId} and ${commentsSnapshot.size} associated comments`);
+    console.log(`Admin deleted post ${postId} and ${totalDeleted} associated comments`);
   } catch (error) {
     console.error('Admin error deleting post:', error);
     throw error;
@@ -552,26 +628,26 @@ export const adminDeletePost = async (postId: string, adminUserId: string): Prom
 };
 
 // Admin: Delete any comment (bypasses ownership check)
-export const adminDeleteComment = async (commentId: string, adminUserId: string): Promise<void> => {
+export const adminDeleteComment = async (commentId: string, postId: string, adminUserId: string): Promise<void> => {
   try {
-    console.log(`Admin ${adminUserId} deleting comment ${commentId}`);
+    console.log(`Admin ${adminUserId} deleting comment ${commentId} from post ${postId}`);
     
-    // Get comment details first
-    const commentDoc = await getDoc(doc(db, 'comments', commentId));
-    if (!commentDoc.exists()) {
-      throw new Error('Comment not found');
-    }
-    
-    const comment = commentDoc.data() as Comment;
-    
-    // Delete the comment
-    await deleteDoc(doc(db, 'comments', commentId));
+    // Delete the comment from nested collection
+    await deleteDoc(doc(db, 'posts', postId, 'comments', commentId));
     
     // Decrease comment count on the post
-    const postRef = doc(db, 'posts', comment.postId);
-    await updateDoc(postRef, {
-      commentsCount: increment(-1)
-    });
+    const postRef = doc(db, 'posts', postId);
+    
+    // Get current post data first
+    const currentPost = await getDoc(postRef);
+    if (currentPost.exists()) {
+      const currentData = currentPost.data();
+      const newCommentsCount = Math.max(0, (currentData.commentsCount || 0) - 1);
+      
+      await updateDoc(postRef, {
+        commentsCount: newCommentsCount
+      });
+    }
     
     console.log(`Admin deleted comment ${commentId}`);
   } catch (error) {
@@ -625,17 +701,25 @@ export const adminGetUserActivity = async (userId: string): Promise<{
       posts.push({ id: doc.id, ...doc.data() } as Post);
     });
     
-    // Get user's comments
-    const commentsQuery = query(
-      collection(db, 'comments'),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
-    const commentsSnapshot = await getDocs(commentsQuery);
+    // Get user's comments from all posts (this is complex with nested structure)
+    // For admin purposes, we'll use collection group query if available
+    // or iterate through all posts to find user's comments
     const comments: Comment[] = [];
-    commentsSnapshot.forEach((doc) => {
-      comments.push({ id: doc.id, ...doc.data() } as Comment);
-    });
+    
+    // Simple approach: get all posts and check their comments
+    const allPostsQuery = query(collection(db, 'posts'));
+    const allPostsSnapshot = await getDocs(allPostsQuery);
+    
+    for (const postDoc of allPostsSnapshot.docs) {
+      const commentsQuery = query(
+        collection(db, 'posts', postDoc.id, 'comments'),
+        where('userId', '==', userId)
+      );
+      const commentsSnapshot = await getDocs(commentsQuery);
+      commentsSnapshot.forEach((commentDoc) => {
+        comments.push({ id: commentDoc.id, ...commentDoc.data() } as Comment);
+      });
+    }
     
     return {
       postCount: posts.length,

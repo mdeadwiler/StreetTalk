@@ -30,6 +30,7 @@ export const createUserProfile = async (
     // Sanitize and normalize username
     const cleanUsername = sanitizeUserContent(username).toLowerCase();
     
+    // Create user profile
     await setDoc(doc(db, 'users', uid), {
       uid,
       email,
@@ -42,14 +43,14 @@ export const createUserProfile = async (
   }
 };
 
-// Check if username is available
+// Check if username is available using direct query
 export const isUsernameAvailable = async (username: string): Promise<boolean> => {
   try {
     console.log('Checking username availability for:', username.toLowerCase());
     const q = query(
       collection(db, 'users'), 
       where('username', '==', username.toLowerCase()),
-      limit(1)  // Required by Firestore security rules
+      limit(1)
     );
     const querySnapshot = await getDocs(q);
     const isAvailable = querySnapshot.empty;
@@ -65,13 +66,13 @@ export const isUsernameAvailable = async (username: string): Promise<boolean> =>
   }
 };
 
-// Get user by username
+// Get user by username using direct query
 export const getUserByUsername = async (username: string): Promise<UserProfile | null> => {
   try {
     const q = query(
       collection(db, 'users'), 
       where('username', '==', username.toLowerCase()),
-      limit(1)  // Add limit for consistency and efficiency
+      limit(1)
     );
     const querySnapshot = await getDocs(q);
     

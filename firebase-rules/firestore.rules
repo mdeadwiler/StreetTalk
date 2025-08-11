@@ -2,175 +2,135 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /* ─────────── Helper Functions ─────────── */
-    function isSignedIn() {
-      return request.auth != null;
+    /* Helpers */
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isAdmin() { return isSignedIn() && request.auth.token.admin == true; }
+
+    // If a limit is provided, it must be sane; if missing, allow (client should still send one).
+    function hasLimit(max) {
+      return !('limit' in request.query) ||
+        (request.query.limit is int && request.query.limit > 0 && request.query.limit <= max);
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    function validContent(maxLen) {
+      return request.resource.data.content is string &&
+             request.resource.data.content.size() > 0 &&
+             request.resource.data.content.size() <= maxLen;
     }
 
-    function isAdmin() {
-      // Simplified: Check if user has admin claim (set via custom claims, not Firestore)
-      return isSignedIn() && request.auth.token.admin == true;
-    }
-
-    // Enforce pagination limits to prevent cost attacks
-    function hasReasonableLimit(maxLimit) {
-      return request.query.limit != null
-             && request.query.limit is int
-             && request.query.limit <= maxLimit
-             && request.query.limit > 0;
-    }
-
-
-    // Validate string content length and presence
-    function validContent(maxLength) {
-      return request.resource.data.content is string
-             && request.resource.data.content.size() > 0
-             && request.resource.data.content.size() <= maxLength;
-    }
-
-
-
-    /* ─────────── POSTS COLLECTION ─────────── */
+    /* POSTS */
     match /posts/{postId} {
-      
-      // READ: Single post by ID (efficient)
       allow get: if isSignedIn();
+      allow list: if isSignedIn() && hasLimit(50);
 
-      // LIST: Step 2 - Add pagination limits to prevent cost attacks
-      allow list: if isSignedIn()
-                  && hasReasonableLimit(50);
-
-      // CREATE: Only authenticated users can create posts
-      // NOTE: Rate limiting is primarily handled client-side and in application logic
-      // Firestore rules are limited for complex rate limiting across documents
       allow create: if isSignedIn()
-                    && request.resource.data.userId == request.auth.uid
-                    && validContent(250)  // Max 250 characters
-                    && request.resource.data.username is string
-                    && request.resource.data.username.size() >= 4
-                    && request.resource.data.username.size() <= 12
-                    && request.resource.data.createdAt == request.time
-                    && request.resource.data.likes == 0
-                    && request.resource.data.commentsCount == 0;
+        && request.resource.data.userId == request.auth.uid
+        && validContent(250)
+        && request.resource.data.username is string
+        && request.resource.data.username.size() >= 4
+        && request.resource.data.username.size() <= 12
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.likes == 0
+        && request.resource.data.commentsCount == 0;
 
-      // UPDATE: Post owner can edit content OR anyone can update comment count
+      // Two allowed update paths:
+      // 1) Owner edits content only (must set updatedAt == server time)
+      // 2) Atomic +1 to commentsCount only
       allow update: if isSignedIn() && (
-                      // Post owner updating content
-                      (resource.data.userId == request.auth.uid
-                       && validContent(250)
-                       && request.resource.data.updatedAt == request.time
-                       // Prevent modification of system fields
-                       && request.resource.data.userId == resource.data.userId
-                       && request.resource.data.username == resource.data.username
-                       && request.resource.data.createdAt == resource.data.createdAt)
-                      ||
-                      // Anyone can increment comment count (for creating comments)
-                      (request.resource.data.commentsCount is number
-                       && request.resource.data.commentsCount >= 0
-                       // Ensure no other fields are being modified
-                       && request.resource.data.content == resource.data.content
-                       && request.resource.data.userId == resource.data.userId
-                       && request.resource.data.username == resource.data.username
-                       && request.resource.data.createdAt == resource.data.createdAt
-                       && request.resource.data.likes == resource.data.likes)
-                    );
+        (
+          resource.data.userId == request.auth.uid
+          && validContent(250)
+          && request.resource.data.updatedAt == request.time
+          // lock identity/system fields
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.username == resource.data.username
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.likes == resource.data.likes
+          && request.resource.data.commentsCount == resource.data.commentsCount
+        )
+        ||
+        (
+          // Strictly allow only commentsCount to change, and only by +1
+          request.resource.data.diff(resource.data).addedKeys().size() == 0
+          && request.resource.data.diff(resource.data).removedKeys().size() == 0
+          && request.resource.data.diff(resource.data).changedKeys().size() == 1
+          && request.resource.data.diff(resource.data).changedKeys()[0] == 'commentsCount'
+          && request.resource.data.commentsCount == resource.data.commentsCount + 1
+        )
+      );
 
-      // DELETE: Only post owner or admin can delete
       allow delete: if isSignedIn()
-                    && (resource.data.userId == request.auth.uid || isAdmin());
+        && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
-    /* ─────────── COMMENTS COLLECTION ─────────── */
-    match /comments/{commentId} {
-      
-      // READ: Single comment by ID
+    /* COMMENTS (nested) */
+    match /posts/{postId}/comments/{commentId} {
       allow get: if isSignedIn();
+      // Safe: path already scopes to one post
+      allow list: if isSignedIn() && hasLimit(50);
 
-      // LIST: Allow listing comments for viewing and post deletion
-      allow list: if isSignedIn()
-                  && hasReasonableLimit(50)
-                  && request.query.where.size() == 1
-                  && request.query.where[0].field == 'postId'
-                  && request.query.where[0].operator == '==';
-
-      // CREATE: Secure comment creation with validation
       allow create: if isSignedIn()
-                    && request.resource.data.userId == request.auth.uid
-                    && request.resource.data.postId is string
-                    && request.resource.data.postId.size() > 0
-                    && validContent(250)  // Max 250 characters
-                    && request.resource.data.username is string
-                    && request.resource.data.username.size() >= 4
-                    && request.resource.data.username.size() <= 12
-                    && request.resource.data.createdAt == request.time;
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.postId == postId
+        && validContent(250)
+        && request.resource.data.username is string
+        && request.resource.data.username.size() >= 4
+        && request.resource.data.username.size() <= 12
+        && request.resource.data.createdAt == request.time;
 
-      // UPDATE: Only comment owner can update
       allow update: if isSignedIn()
-                    && resource.data.userId == request.auth.uid
-                    && validContent(250)
-                    && request.resource.data.updatedAt == request.time
-                    // Prevent modification of system fields
-                    && request.resource.data.userId == resource.data.userId
-                    && request.resource.data.postId == resource.data.postId
-                    && request.resource.data.username == resource.data.username
-                    && request.resource.data.createdAt == resource.data.createdAt;
+        && resource.data.userId == request.auth.uid
+        && validContent(250)
+        && request.resource.data.updatedAt == request.time
+        // identity fields immutable
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.postId == resource.data.postId
+        && request.resource.data.username == resource.data.username
+        && request.resource.data.createdAt == resource.data.createdAt;
 
-      // DELETE: Allow authenticated users (temporary - for post deletion to work)
       allow delete: if isSignedIn();
     }
 
-    /* ─────────── USERS COLLECTION ─────────── */
+    /* USERS */
     match /users/{userId} {
-      
-      // READ: Allow reading for authenticated users and username lookups
       allow get: if isSignedIn();
-      
-      // LIST: Allow username lookups (for availability and login) and admin access
-      allow list: if (
-                    // Admin can list all users (when authenticated)
-                    (isSignedIn() && isAdmin() && hasReasonableLimit(100))
-                    ||
-                    // Username lookups - temporary permissive for debugging
-                    (request.query.limit == 1)
-                  );
 
-      // CREATE: Only during registration
+      // Allow username lookups for login and registration
+      allow list: if hasLimit(10);
+
       allow create: if isOwner(userId)
-                    && request.resource.data.uid == request.auth.uid
-                    && request.resource.data.email is string
-                    && request.resource.data.username is string
-                    && request.resource.data.username.size() >= 4
-                    && request.resource.data.username.size() <= 12
-                    && request.resource.data.createdAt == request.time;
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email is string
+        && request.resource.data.username is string
+        && request.resource.data.username.size() >= 4
+        && request.resource.data.username.size() <= 12
+        && request.resource.data.createdAt == request.time;
 
-      // UPDATE: Only user can update their own profile OR admin can update any profile
-      allow update: if (isOwner(userId)
-                        // User updating their own profile
-                        && request.resource.data.uid == resource.data.uid
-                        && request.resource.data.email == resource.data.email
-                        && request.resource.data.createdAt == resource.data.createdAt
-                        // Allow updating blocked users list for personal content filtering
-                        && (!('blockedUsers' in request.resource.data) || 
-                            request.resource.data.blockedUsers is list))
-                    ||
-                    (isAdmin()
-                        // Admin can update user roles but not core identity fields
-                        && request.resource.data.uid == resource.data.uid
-                        && request.resource.data.email == resource.data.email
-                        && request.resource.data.username == resource.data.username
-                        && request.resource.data.createdAt == resource.data.createdAt);
+      allow update: if (
+        // user updating their own profile; identity fields locked
+        isOwner(userId)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (!('blockedUsers' in request.resource.data) || request.resource.data.blockedUsers is list)
+      ) || (
+        // admin edits (e.g., roles/flags) but cannot alter identity fields
+        isAdmin()
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.username == resource.data.username
+        && request.resource.data.createdAt == resource.data.createdAt
+      );
 
-      // DELETE: Only user can delete their own profile
       allow delete: if isOwner(userId);
     }
 
-    /* ─────────── SECURITY: Block everything else ─────────── */
+
+
+    /* Deny everything else */
     match /{document=**} {
-      allow read, write: if false;  // Explicit deny for any other collections
+      allow read, write: if false;
     }
   }
 }
