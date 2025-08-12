@@ -26,6 +26,7 @@ import { colors, spacing } from '../../styles/theme';
 import PostCard from '../../components/post/PostCard';
 import { withRateLimit } from '../../utils/rateLimiting';
 import BlockUserButton from '../../components/BlockUserButton';
+import ReportButton from '../../components/ReportButton';
 
 type PostCommentsScreenProps = NativeStackScreenProps<RootStackParamList, 'PostComments'>;
 
@@ -316,12 +317,23 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
                   </TouchableOpacity>
                 )}
                 
-                {/* Block User Button for Comments */}
-                <BlockUserButton 
-                  targetUserId={comment.userId}
-                  targetUsername={comment.username}
-                  compact={true}
-                />
+                {/* Report and Block Buttons for non-author comments */}
+                {comment.userId !== user?.uid && (
+                  <>
+                    <ReportButton 
+                      targetType="comment"
+                      targetId={comment.id}
+                      targetUserId={comment.userId}
+                      targetUsername={comment.username}
+                      compact={true}
+                    />
+                    <BlockUserButton 
+                      targetUserId={comment.userId}
+                      targetUsername={comment.username}
+                      compact={true}
+                    />
+                  </>
+                )}
               </View>
             </View>
             <Text style={styles.commentContent}>{comment.content}</Text>

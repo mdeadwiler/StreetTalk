@@ -19,6 +19,7 @@ import {
 import { db } from '../utils/firebaseConfig';
 import { Post, Comment } from '../types';
 import { sanitizeUserContent } from '../utils/security';
+import { validateContentForSubmission } from '../utils/contentFilter';
 
 // Posts Collection Functions
 export const createPost = async (
@@ -30,6 +31,11 @@ export const createPost = async (
   mediaThumbnail?: string
 ): Promise<string> => {
   try {
+    // Validate content before posting
+    const contentValidation = validateContentForSubmission(content);
+    if (!contentValidation.isValid) {
+      throw new Error(contentValidation.message);
+    }
     const postData: any = {
       content: sanitizeUserContent(content),
       userId,
@@ -220,6 +226,11 @@ export const createComment = async (
   content: string
 ): Promise<string> => {
   try {
+    // Validate content before posting
+    const contentValidation = validateContentForSubmission(content);
+    if (!contentValidation.isValid) {
+      throw new Error(contentValidation.message);
+    }
     // Add comment to nested collection
     const docRef = await addDoc(collection(db, 'posts', postId, 'comments'), {
       postId,

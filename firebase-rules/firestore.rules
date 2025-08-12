@@ -103,6 +103,24 @@ service cloud.firestore {
       );
     }
 
+    /* REPORTS */
+    match /reports/{reportId} {
+      // Only allow creating reports, not reading/updating/deleting by regular users
+      allow create: if isSignedIn()
+        && request.resource.data.reporterUserId == request.auth.uid
+        && request.resource.data.reporterUsername is string
+        && request.resource.data.targetType in ['post', 'comment', 'user']
+        && request.resource.data.targetId is string
+        && request.resource.data.targetUserId is string
+        && request.resource.data.targetUsername is string
+        && request.resource.data.reason is string
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.status == 'pending';
+      
+      // Only admins can read, update, or delete reports
+      allow read, update, delete: if isAdmin();
+    }
+
     /* USERS */
     match /users/{userId} {
       allow get: if isSignedIn();

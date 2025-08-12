@@ -5,6 +5,7 @@ import { Post } from '../../types';
 import { colors, spacing } from '../../styles/theme';
 import { formatTimestamp, deletePost } from '../../services/firestore';
 import BlockUserButton from '../BlockUserButton';
+import ReportButton from '../ReportButton';
 
 interface PostCardProps {
   post: Post;
@@ -53,13 +54,22 @@ export default function PostCard({ post, onPress, currentUserId, onEdit, onDelet
         </View>
         
         <View style={styles.headerActions}>
-          {/* Block User Button (for non-owners) */}
+          {/* Block User Button and Report Button (for non-owners) */}
           {!isOwner && (
-            <BlockUserButton 
-              targetUserId={post.userId}
-              targetUsername={post.username}
-              compact={true}
-            />
+            <View style={styles.nonOwnerActions}>
+              <ReportButton 
+                targetType="post"
+                targetId={post.id}
+                targetUserId={post.userId}
+                targetUsername={post.username}
+                compact={true}
+              />
+              <BlockUserButton 
+                targetUserId={post.userId}
+                targetUsername={post.username}
+                compact={true}
+              />
+            </View>
           )}
           
           {/* Owner Actions */}
@@ -139,6 +149,11 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  nonOwnerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   actions: {
     flexDirection: 'row',
