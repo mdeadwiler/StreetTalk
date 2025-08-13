@@ -11,6 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import { RootStackParamList } from '../../types';
 import { styles as authStyles } from '../../styles/theme';
 import { validateRegisterForm, getZodErrorMessage, getFirebaseErrorMessage } from '../../utils/zod';
+import { parseError, logError } from '../../utils/errorHandling';
 
 
 type RegisterScreenProps = NativeStackScreenProps<
@@ -38,13 +39,8 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
       // Navigation happens automatically via AuthContext and AppNavigator
       
     } catch (error: any) {
-      console.log("Registration Error", error);
-      if (error.message === 'Username is already taken') {
-        Alert.alert("Error", "This username is already taken. Please choose a different one.");
-      } else {
-        const errorMessage = getFirebaseErrorMessage(error.code);
-        Alert.alert("Error", errorMessage);
-      }
+      const parsedError = logError(error, 'RegisterScreen - Handle Register');
+      Alert.alert('Registration Failed', parsedError.message);
     }
   };
   return (

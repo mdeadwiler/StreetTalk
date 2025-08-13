@@ -11,6 +11,7 @@ import { createPost } from '../../services/firestore'
 import { pickMedia, takeMedia, uploadMedia, MediaResult, validateMedia } from '../../services/mediaService'
 import { withRateLimit } from '../../utils/rateLimiting'
 import RateLimitStatus from '../../components/RateLimitStatus'
+import { logError } from '../../utils/errorHandling'
 
 type CreatePostScreenProps = NativeStackScreenProps<RootStackParamList, 'CreatePost'>
 
@@ -64,8 +65,8 @@ const handleCreatePost = async () => {
     Alert.alert('Success', 'Post created successfully!')
     navigation.navigate('MainTabs')
   } catch (error) {
-    console.error('Error creating post:', error)
-    Alert.alert('Error', 'Failed to create post. Please try again.')
+    const parsedError = logError(error, 'CreatePostScreen - Handle Create Post');
+    Alert.alert('Post Creation Failed', parsedError.message);
   } finally {
     setUploading(false)
   }
@@ -82,8 +83,8 @@ const handlePickMedia = async () => {
       setSelectedMedia(media);
     }
   } catch (error) {
-    console.error('Error picking media:', error);
-    Alert.alert('Error', 'Failed to pick media. Please check permissions.');
+    const parsedError = logError(error, 'CreatePostScreen - Handle Pick Media');
+    Alert.alert('Media Selection Failed', parsedError.message);
   }
 };
 
@@ -94,8 +95,8 @@ const handleTakeMedia = async () => {
       setSelectedMedia(media);
     }
   } catch (error) {
-    console.error('Error taking media:', error);
-    Alert.alert('Error', 'Failed to take media. Please check permissions.');
+    const parsedError = logError(error, 'CreatePostScreen - Handle Take Media');
+    Alert.alert('Camera Failed', parsedError.message);
   }
 };
 

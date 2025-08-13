@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, Image } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { Post } from '../../types';
 import { colors, spacing } from '../../styles/theme';
 import { formatTimestamp, deletePost } from '../../services/firestore';
 import BlockUserButton from '../BlockUserButton';
 import ReportButton from '../ReportButton';
+import { StreetStyles } from '../../styles/streetStyles';
 
 interface PostCardProps {
   post: Post;
@@ -46,17 +47,23 @@ export default function PostCard({ post, onPress, currentUserId, onEdit, onDelet
   };
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.header}>
-        <View style={styles.userInfo}>
-          <Text style={styles.displayName}>@{post.username}</Text>
-          <Text style={styles.timestamp}>{formatTimestamp(post.createdAt)}</Text>
+    <Pressable 
+      style={({ pressed }: { pressed: boolean }) => ({
+        opacity: pressed ? 0.95 : 1,
+      })}
+      className={StreetStyles.postCard}
+      onPress={onPress}
+    >
+      <View className={StreetStyles.postHeader}>
+        <View className="flex-1">
+          <Text className={StreetStyles.postUsername}>@{post.username}</Text>
+          <Text className={StreetStyles.postTimestamp}>{formatTimestamp(post.createdAt)}</Text>
         </View>
         
-        <View style={styles.headerActions}>
+        <View className="flex-row items-center space-x-2">
           {/* Block User Button and Report Button (for non-owners) */}
           {!isOwner && (
-            <View style={styles.nonOwnerActions}>
+            <View className="flex-row items-center space-x-2">
               <ReportButton 
                 targetType="post"
                 targetId={post.id}
@@ -74,29 +81,49 @@ export default function PostCard({ post, onPress, currentUserId, onEdit, onDelet
           
           {/* Owner Actions */}
           {isOwner && (
-            <View style={styles.actions}>
-              <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
-                <Text style={styles.actionText}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleDelete} style={styles.actionButton}>
-                <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
-              </TouchableOpacity>
+            <View className="flex-row items-center space-x-3">
+              <Pressable 
+                onPress={handleEdit} 
+                style={({ pressed }: { pressed: boolean }) => ({
+                  opacity: pressed ? 0.7 : 1,
+                })}
+                className={StreetStyles.editButton}
+              >
+                <Text className={StreetStyles.editButtonText}>Edit</Text>
+              </Pressable>
+              <Pressable 
+                onPress={handleDelete} 
+                style={({ pressed }: { pressed: boolean }) => ({
+                  opacity: pressed ? 0.7 : 1,
+                })}
+                className={StreetStyles.deleteButton}
+              >
+                <Text className={StreetStyles.deleteButtonText}>Delete</Text>
+              </Pressable>
             </View>
           )}
         </View>
       </View>
 
-      {post.content && <Text style={styles.content}>{post.content}</Text>}
+      {post.content && (
+        <Text className={StreetStyles.postContent}>
+          {post.content}
+        </Text>
+      )}
 
       {/* Media Section */}
       {post.mediaUrl && (
-        <View style={styles.mediaContainer}>
+        <View className={StreetStyles.mediaContainer}>
           {post.mediaType === 'image' ? (
-            <Image source={{ uri: post.mediaUrl }} style={styles.mediaContent} />
+            <Image 
+              source={{ uri: post.mediaUrl }} 
+              className={StreetStyles.mediaImage}
+              style={{ resizeMode: 'cover' }}
+            />
           ) : (
             <Video
               source={{ uri: post.mediaUrl }}
-              style={styles.mediaContent}
+              className={StreetStyles.mediaImage}
               useNativeControls
               resizeMode={ResizeMode.CONTAIN}
               shouldPlay={false}
@@ -105,16 +132,16 @@ export default function PostCard({ post, onPress, currentUserId, onEdit, onDelet
         </View>
       )}
 
-      <View style={styles.footer}>
-        <View style={styles.stats}>
-          <Text style={styles.statText}>💬 {post.commentsCount} comments</Text>
-          <Text style={styles.statText}>❤️ {post.likes} likes</Text>
+      <View className={StreetStyles.postFooter}>
+        <View className={StreetStyles.postStats}>
+          <Text className={StreetStyles.postStat}>💬 {post.commentsCount} comments</Text>
+          <Text className={StreetStyles.postStat}>❤️ {post.likes} likes</Text>
         </View>
         {post.updatedAt && (
-          <Text style={styles.editedText}>Edited</Text>
+          <Text className={StreetStyles.caption + " italic"}>Edited</Text>
         )}
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 

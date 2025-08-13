@@ -3,6 +3,7 @@ import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEma
 import { auth } from '../utils/firebaseConfig'
 import { AuthContextType, UserProfile } from '../types';
 import { getUserByUsername, createUserProfile, isUsernameAvailable, getUserProfile } from '../services/userService';
+import { logError } from '../utils/errorHandling';
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
@@ -21,7 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode}) => {
           const profile = await getUserProfile(currentUser.uid);
           setUserProfile(profile);
         } catch (error) {
-          console.error('Error loading user profile:', error);
+          logError(error, 'AuthContext - Load Profile');
           setUserProfile(null);
         }
       } else {
@@ -34,28 +35,38 @@ export const AuthProvider = ({ children }: { children: ReactNode}) => {
   }, [])
 
   const login = async (username: string, password: string) => {
-    // Find user by username first
-    const userProfile = await getUserByUsername(username);
-    if (!userProfile) {
-      throw new Error('Username not found');
+    try {
+      // Find user by username first
+      const userProfile = await getUserByUsername(username);
+      if (!userProfile) {
+        throw new Error('user-not-found');
+      }
+      
+      // Sign in with email and password
+      await signInWithEmailAndPassword(auth, userProfile.email, password);
+    } catch (error) {
+      const parsedError = logError(error, 'AuthContext - Login');
+      throw new Error(parsedError.message);
     }
-    
-    // Sign in with email and password
-    await signInWithEmailAndPassword(auth, userProfile.email, password);
   }
 
   const register = async (email: string, username: string, password: string) => {
-    // Check if username is available
-    const isAvailable = await isUsernameAvailable(username);
-    if (!isAvailable) {
-      throw new Error('Username is already taken');
+    try {
+      // Check if username is available
+      const isAvailable = await isUsernameAvailable(username);
+      if (!isAvailable) {
+        throw new Error('Username is already taken');
+      }
+      
+      // Create Firebase auth user
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Create user profile in Firestore
+      await createUserProfile(userCredential.user.uid, email, username);
+    } catch (error) {
+      const parsedError = logError(error, 'AuthContext - Register');
+      throw new Error(parsedError.message);
     }
-    
-    // Create Firebase auth user
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    
-    // Create user profile in Firestore
-    await createUserProfile(userCredential.user.uid, email, username);
   }
 
   const logout = async() => {

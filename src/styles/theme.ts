@@ -6,6 +6,7 @@ export const colors = {
   cardBackground: '#1a1a1a',
   borderColor: '#333333',
   mutedText: '#888888',
+  error: '#ff4444',
 } as const;
 
 export const spacing = {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, RefreshControl, Alert, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
@@ -7,6 +7,9 @@ import { RootStackParamList, Post } from '../../types';
 import { getPaginatedPosts } from '../../services/firestore';
 import { colors, spacing } from '../../styles/theme';
 import PostCard from '../../components/post/PostCard';
+import { logError } from '../../utils/errorHandling';
+import ErrorMessage from '../../components/ErrorMessage';
+import { StreetStyles } from '../../styles/streetStyles';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -19,9 +22,11 @@ export default function HomeScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState<any>(null);
 
   const loadPosts = async (refresh = false) => {
     try {
+      setError(null); // Clear previous errors
       if (refresh) {
         setRefreshing(true);
         const { posts: newPosts, lastVisible: newLastVisible } = await getPaginatedPosts(20, undefined, user?.uid);
@@ -36,8 +41,8 @@ export default function HomeScreen() {
         setHasMore(newPosts.length === 20);
       }
     } catch (error) {
-      console.error('Error loading posts:', error);
-      Alert.alert('Error', 'Failed to load posts. Please try again.');
+      const parsedError = logError(error, 'HomeScreen - Load Posts');
+      setError(parsedError);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -59,7 +64,9 @@ export default function HomeScreen() {
         setHasMore(false);
       }
     } catch (error) {
-      console.error('Error loading more posts:', error);
+      const parsedError = logError(error, 'HomeScreen - Load More Posts');
+      // For load more errors, show a brief alert instead of persistent error
+      Alert.alert('Load More Failed', parsedError.message);
     } finally {
       setLoadingMore(false);
     }
@@ -83,8 +90,8 @@ export default function HomeScreen() {
     try {
       await logout();
     } catch (error) {
-      console.error('Logout error:', error);
-      Alert.alert('Error', 'Failed to logout. Please try again.');
+      const parsedError = logError(error, 'HomeScreen - Handle Logout');
+      Alert.alert('Logout Failed', parsedError.message);
     }
   };
 
@@ -102,18 +109,26 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View className={StreetStyles.screen}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>StreetTalk</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+      <View className={StreetStyles.header}>
+        <View className="flex-row justify-between items-center">
+          <Text className={StreetStyles.headerTitle}>StreetTalk</Text>
+          <Pressable 
+            style={({ pressed }: { pressed: boolean }) => ({
+              opacity: pressed ? 0.7 : 1,
+            })}
+            className={StreetStyles.buttonSecondary}
+            onPress={handleLogout}
+          >
+            <Text className={StreetStyles.deleteButtonText}>Logout</Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Main Feed */}
       <FlatList
-        style={styles.feedContainer}
+        className={StreetStyles.container}
         data={posts}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
@@ -123,9 +138,18 @@ export default function HomeScreen() {
         onEndReached={loadMorePosts}
         onEndReachedThreshold={0.1}
         ListHeaderComponent={() => (
-          <View style={styles.welcomeSection}>
-            <Text style={styles.welcomeText}>Welcome to Street Talk</Text>
-            <Text style={styles.userEmailText}>@{userProfile?.username}</Text>
+          <View>
+            <View style={styles.welcomeSection}>
+              <Text style={styles.welcomeText}>Welcome to Street Talk</Text>
+              <Text style={styles.userEmailText}>@{userProfile?.username}</Text>
+            </View>
+            {error && (
+              <ErrorMessage 
+                error={error} 
+                onRetry={() => loadPosts()} 
+                style={{ marginHorizontal: spacing.lg, marginBottom: spacing.md }}
+              />
+            )}
           </View>
         )}
         ListEmptyComponent={() => (
@@ -158,12 +182,15 @@ export default function HomeScreen() {
       />
 
       {/* Create Post Button */}
-      <TouchableOpacity 
-        style={styles.createPostButton}
+      <Pressable 
+        style={({ pressed }: { pressed: boolean }) => ([
+          styles.createPostButton,
+          { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] }
+        ])}
         onPress={handleCreatePost}
       >
         <Text style={styles.createPostText}>+</Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }
