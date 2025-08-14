@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { getBlockedUsers, unblockUser } from '../../services/firestore';
-import { colors, spacing } from '../../styles/theme';
+import { StreetColors } from '../../styles/streetStyles';
 
 export default function BlockedUsersScreen() {
   const { user } = useAuth();
@@ -113,32 +113,32 @@ export default function BlockedUsersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: StreetColors.background.primary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: spacing.lg,
+    paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderColor,
+    borderBottomColor: StreetColors.border.light,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.primary,
+    color: StreetColors.brand.primary,
   },
   content: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   description: {
     fontSize: 14,
-    color: colors.mutedText,
-    marginBottom: spacing.xl,
+    color: StreetColors.text.muted,
+    marginBottom: 24,
     lineHeight: 20,
   },
   loadingContainer: {
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: colors.mutedText,
+    color: StreetColors.text.muted,
     fontSize: 16,
   },
   emptyState: {
@@ -158,24 +158,24 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.sm,
+    color: StreetColors.text.primary,
+    marginBottom: 12,
   },
   emptySubtext: {
     fontSize: 14,
-    color: colors.mutedText,
+    color: StreetColors.text.muted,
     textAlign: 'center',
   },
   userCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.cardBackground,
-    padding: spacing.md,
+    backgroundColor: StreetColors.background.primary,
+    padding: 16,
     borderRadius: 8,
-    marginBottom: spacing.md,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.borderColor,
+    borderColor: StreetColors.border.light,
   },
   userInfo: {
     flex: 1,
@@ -183,23 +183,23 @@ const styles = StyleSheet.create({
   userId: {
     fontSize: 14,
     fontWeight: '500',
-    color: colors.text,
-    marginBottom: spacing.xs,
+    color: StreetColors.text.primary,
+    marginBottom: 8,
   },
   blockedNote: {
     fontSize: 12,
-    color: colors.mutedText,
+    color: StreetColors.text.muted,
   },
   unblockButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: StreetColors.brand.primary,
   },
   unblockText: {
     fontSize: 14,
-    color: colors.primary,
+    color: StreetColors.brand.primary,
     fontWeight: '500',
   },
 });

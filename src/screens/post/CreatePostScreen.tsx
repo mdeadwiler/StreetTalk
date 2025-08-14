@@ -1,12 +1,11 @@
 import React, { useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, Alert, Image, StyleSheet } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, Alert, Image, StyleSheet, KeyboardAvoidingView, Platform, StatusBar } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Video, ResizeMode } from 'expo-av'
 import { useAuth} from '../../context/AuthContext'
 import { RootStackParamList } from '../../types'
 import { validateCreatePostForm, getZodErrorMessage } from '../../utils/zod'
-import { styles as authStyles } from '../../styles/theme'
-import { colors, spacing } from '../../styles/theme'
+import { StreetColors } from '../../styles/streetStyles'
 import { createPost } from '../../services/firestore'
 import { pickMedia, takeMedia, uploadMedia, MediaResult, validateMedia } from '../../services/mediaService'
 import { withRateLimit } from '../../utils/rateLimiting'
@@ -120,57 +119,77 @@ const characterCount = content.length
 const isOverLimit = characterCount > 250
 
 return (
-    <View style={[authStyles.container, { justifyContent: 'flex-start', paddingTop: 60 }]}>
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', paddingBottom: 20 }}>
-        <TouchableOpacity onPress={handleCancel}>
-          <Text style={authStyles.linkText}>Cancel</Text>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <StatusBar barStyle="dark-content" backgroundColor={StreetColors.background.primary} />
+      
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.headerButton} 
+          onPress={handleCancel}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
+        <View style={styles.headerSpacer} />
       </View>
 
-      <View style={{ flex: 1, justifyContent: 'flex-start', alignItems: 'center', paddingTop: 40 }}>
-        <Text style={[authStyles.title, { fontSize: 28, marginBottom: 30 }]}>Post</Text>
+      <View style={styles.content}>
+        <Text style={styles.title}>Post</Text>
         
         <TextInput
-          style={[authStyles.textArea, { height: 150, width: '100%' }]}
+          style={styles.textInput}
           placeholder="What's happening?"
+          placeholderTextColor={StreetColors.text.muted}
           value={content}
           onChangeText={setContent}
           multiline
           maxLength={250}
           autoFocus
+          textAlignVertical="top"
         />
 
         <Text style={[
-          authStyles.characterCounter,
-          { color: isOverLimit ? '#ff4444' : characterCount > 200 ? '#ff8800' : colors.mutedText }
+          styles.characterCounter,
+          isOverLimit ? styles.overLimitText : 
+          characterCount > 200 ? styles.warningText : 
+          styles.normalCounterText
         ]}>
           {characterCount}/250
         </Text>
 
         {/* Media Section */}
         {selectedMedia && (
-          <View style={mediaStyles.mediaContainer}>
+          <View style={styles.mediaContainer}>
             {selectedMedia.type === 'image' ? (
-              <Image source={{ uri: selectedMedia.uri }} style={mediaStyles.mediaPreview} />
+              <Image source={{ uri: selectedMedia.uri }} style={styles.mediaImage} />
             ) : (
               <Video
                 source={{ uri: selectedMedia.uri }}
-                style={mediaStyles.mediaPreview}
+                style={styles.mediaImage}
                 useNativeControls
                 resizeMode={ResizeMode.CONTAIN}
                 shouldPlay={false}
               />
             )}
-            <TouchableOpacity style={mediaStyles.removeButton} onPress={handleRemoveMedia}>
-              <Text style={mediaStyles.removeButtonText}>✕</Text>
+            <TouchableOpacity 
+              style={styles.removeMediaButton}
+              onPress={handleRemoveMedia}
+            >
+              <Text style={styles.removeMediaText}>✕</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* Media Actions */}
-        <View style={mediaStyles.mediaActions}>
-          <TouchableOpacity style={mediaStyles.mediaButton} onPress={showMediaOptions}>
-            <Text style={mediaStyles.mediaButtonText}>📷 Add Media</Text>
+        <View style={styles.mediaActionsContainer}>
+          <TouchableOpacity 
+            style={styles.addMediaButton} 
+            onPress={showMediaOptions}
+          >
+            <Text style={styles.addMediaButtonText}>📷 Add Media</Text>
           </TouchableOpacity>
         </View>
 
@@ -178,69 +197,170 @@ return (
         <RateLimitStatus actionType="POST_CREATION" showWarning={true} />
 
         <TouchableOpacity 
+          style={[
+            styles.createButton,
+            ((content.trim().length === 0 && !selectedMedia) || isOverLimit || uploading) && styles.disabledButton
+          ]}
           onPress={handleCreatePost}
           disabled={(content.trim().length === 0 && !selectedMedia) || isOverLimit || uploading}
-          style={[
-            authStyles.button,
-            { marginTop: 20, paddingVertical: 12 },
-            ((content.trim().length === 0 && !selectedMedia) || isOverLimit || uploading) && authStyles.buttonDisabled
-          ]}
         >
           <Text style={[
-            authStyles.buttonText,
-            ((content.trim().length === 0 && !selectedMedia) || isOverLimit || uploading) && authStyles.buttonTextDisabled
-          ]}>{uploading ? 'Posting...' : 'Post'}</Text>
+            styles.createButtonText,
+            ((content.trim().length === 0 && !selectedMedia) || isOverLimit || uploading) && styles.disabledButtonText
+          ]}>
+            {uploading ? 'Posting...' : 'Post'}
+          </Text>
         </TouchableOpacity>
       </View>
-    </View>
-)
+    </KeyboardAvoidingView>
+  )
 }
 
-const mediaStyles = StyleSheet.create({
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: StreetColors.background.primary,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 24,
+    backgroundColor: StreetColors.background.primary,
+    borderBottomWidth: 1,
+    borderBottomColor: StreetColors.border.light,
+  },
+  headerButton: {
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  headerSpacer: {
+    flex: 1,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: StreetColors.brand.primary,
+    fontWeight: '500',
+  },
+  content: {
+    flex: 1,
+    paddingTop: 40,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: StreetColors.text.primary,
+    marginBottom: 32,
+    alignSelf: 'center',
+  },
+  textInput: {
+    width: '100%',
+    minHeight: 120,
+    maxHeight: 200,
+    backgroundColor: StreetColors.background.secondary,
+    borderWidth: 1,
+    borderColor: StreetColors.border.light,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: StreetColors.text.primary,
+    textAlignVertical: 'top',
+  },
+  characterCounter: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  normalCounterText: {
+    color: StreetColors.text.muted,
+  },
+  warningText: {
+    color: '#D97706',
+  },
+  overLimitText: {
+    color: '#DC2626',
+  },
   mediaContainer: {
     position: 'relative',
-    marginVertical: spacing.md,
     width: '100%',
-    borderRadius: 8,
+    marginTop: 16,
+    borderRadius: 12,
     overflow: 'hidden',
+    backgroundColor: StreetColors.background.secondary,
+    borderWidth: 1,
+    borderColor: StreetColors.border.light,
   },
-  mediaPreview: {
+  mediaImage: {
     width: '100%',
-    height: 200,
-    borderRadius: 8,
+    height: 256,
   },
-  removeButton: {
+  removeMediaButton: {
     position: 'absolute',
     top: 8,
     right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  removeButtonText: {
-    color: colors.text,
+  removeMediaText: {
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: 'bold',
   },
-  mediaActions: {
+  mediaActionsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginVertical: spacing.sm,
+    marginVertical: 16,
   },
-  mediaButton: {
-    backgroundColor: colors.cardBackground,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 6,
+  addMediaButton: {
+    backgroundColor: StreetColors.background.tertiary,
     borderWidth: 1,
-    borderColor: colors.borderColor,
+    borderColor: StreetColors.border.light,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  mediaButtonText: {
-    color: colors.text,
-    fontSize: 14,
+  addMediaButtonText: {
+    fontSize: 16,
+    color: StreetColors.text.secondary,
     fontWeight: '500',
+    textAlign: 'center',
+  },
+  createButton: {
+    width: '100%',
+    backgroundColor: StreetColors.brand.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    marginTop: 20,
+    minHeight: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  createButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: StreetColors.background.primary,
+    textAlign: 'center',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  disabledButtonText: {
+    opacity: 0.5,
   },
 });
+

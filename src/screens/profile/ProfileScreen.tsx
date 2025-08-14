@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { Post } from '../../types';
 import { getPaginatedUserPosts } from '../../services/firestore';
-import { colors, spacing } from '../../styles/theme';
+import { StreetColors } from '../../styles/streetStyles';
 import PostCard from '../../components/post/PostCard';
 
 export default function ProfileScreen() {
@@ -145,62 +145,62 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: StreetColors.background.primary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: spacing.lg,
+    paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderColor,
+    borderBottomColor: StreetColors.border.light,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.primary,
+    color: StreetColors.brand.primary,
   },
   content: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20,
   },
   userSection: {
     alignItems: 'center',
-    paddingVertical: spacing.xl,
+    paddingVertical: 24,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderColor,
-    marginBottom: spacing.lg,
+    borderBottomColor: StreetColors.border.light,
+    marginBottom: 20,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.primary,
+    backgroundColor: StreetColors.brand.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: 16,
   },
   avatarText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: colors.text,
+    color: StreetColors.background.primary,
   },
   displayName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.text,
+    color: StreetColors.text.primary,
     marginBottom: 4,
   },
   email: {
     fontSize: 14,
-    color: colors.mutedText,
-    marginBottom: spacing.sm,
+    color: StreetColors.text.muted,
+    marginBottom: 12,
   },
   postCount: {
     fontSize: 16,
-    color: colors.primary,
+    color: StreetColors.brand.primary,
     fontWeight: '500',
   },
   postsSection: {
@@ -209,8 +209,8 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.md,
+    color: StreetColors.text.primary,
+    marginBottom: 16,
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   loadingText: {
-    color: colors.mutedText,
+    color: StreetColors.text.muted,
     fontSize: 16,
   },
   emptyState: {
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyText: {
-    color: colors.mutedText,
+    color: StreetColors.text.muted,
     fontSize: 16,
     textAlign: 'center',
   },

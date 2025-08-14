@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { RateLimiter } from '../utils/rateLimiting';
-import { colors, spacing } from '../styles/theme';
+import { StreetColors } from '../styles/streetStyles';
 
 interface RateLimitStatusProps {
   actionType: 'POST_CREATION' | 'COMMENT_CREATION';
@@ -78,42 +78,42 @@ export default function RateLimitStatus({ actionType, showWarning = true }: Rate
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: spacing.sm,
-    padding: spacing.md,
-    backgroundColor: colors.cardBackground,
+    marginVertical: 8,
+    padding: 16,
+    backgroundColor: StreetColors.background.secondary,
     borderRadius: 8,
     borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
+    borderLeftColor: StreetColors.brand.primary,
   },
   nearLimit: {
-    borderLeftColor: '#FFA500', // Orange
-    backgroundColor: 'rgba(255, 165, 0, 0.1)',
+    borderLeftColor: '#f59e0b', // Orange
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
   },
   atLimit: {
-    borderLeftColor: '#FF4444', // Red
-    backgroundColor: 'rgba(255, 68, 68, 0.1)',
+    borderLeftColor: '#dc2626', // Red
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
   },
   text: {
     fontSize: 12,
-    color: colors.mutedText,
-    marginBottom: spacing.xs,
+    color: StreetColors.text.muted,
+    marginBottom: 4,
   },
   atLimitText: {
-    color: '#FF4444',
+    color: '#dc2626',
     fontWeight: '500',
   },
   progressBar: {
     height: 3,
-    backgroundColor: colors.borderColor,
+    backgroundColor: StreetColors.border.light,
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.primary,
+    backgroundColor: StreetColors.brand.primary,
     borderRadius: 2,
   },
   warningProgress: {
-    backgroundColor: '#FFA500',
+    backgroundColor: '#f59e0b',
   },
 });

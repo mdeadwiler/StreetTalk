@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { reportContent, REPORT_REASONS, ReportReason } from '../services/reportService';
-import { colors, spacing } from '../styles/theme';
+import { StreetColors } from '../styles/streetStyles';
 
 interface ReportButtonProps {
   targetType: 'post' | 'comment' | 'user';
@@ -155,109 +155,109 @@ export default function ReportButton({
 
 const styles = StyleSheet.create({
   button: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 6,
-    backgroundColor: colors.error,
+    backgroundColor: '#dc2626',
   },
   buttonText: {
-    color: 'white',
+    color: StreetColors.background.primary,
     fontSize: 14,
     fontWeight: '500',
   },
   compactButton: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   compactButtonText: {
-    color: colors.error,
+    color: '#dc2626',
     fontSize: 12,
     fontWeight: '500',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: StreetColors.background.primary,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderColor,
+    borderBottomColor: StreetColors.border.light,
   },
   cancelButton: {
-    color: colors.primary,
+    color: StreetColors.brand.primary,
     fontSize: 16,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.text,
+    color: StreetColors.text.primary,
   },
   submitButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 6,
-    backgroundColor: colors.error,
+    backgroundColor: '#dc2626',
   },
   submitButtonDisabled: {
-    backgroundColor: colors.mutedText,
+    backgroundColor: StreetColors.text.muted,
   },
   submitButtonText: {
-    color: 'white',
+    color: StreetColors.background.primary,
     fontSize: 16,
     fontWeight: '500',
   },
   submitButtonTextDisabled: {
-    color: colors.background,
+    color: StreetColors.background.primary,
   },
   modalContent: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 24,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.text,
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
+    color: StreetColors.text.primary,
+    marginTop: 24,
+    marginBottom: 16,
   },
   reasonOption: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.xs,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    marginBottom: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.borderColor,
+    borderColor: StreetColors.border.light,
   },
   reasonOptionSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: StreetColors.brand.primary,
+    borderColor: StreetColors.brand.primary,
   },
   reasonText: {
     fontSize: 16,
-    color: colors.text,
+    color: StreetColors.text.primary,
   },
   reasonTextSelected: {
-    color: 'white',
+    color: StreetColors.background.primary,
     fontWeight: '500',
   },
   textInput: {
     borderWidth: 1,
-    borderColor: colors.borderColor,
+    borderColor: StreetColors.border.light,
     borderRadius: 8,
-    padding: spacing.md,
+    padding: 16,
     fontSize: 16,
-    color: colors.text,
-    backgroundColor: colors.cardBackground,
+    color: StreetColors.text.primary,
+    backgroundColor: StreetColors.background.secondary,
     textAlignVertical: 'top',
   },
   characterCount: {
     textAlign: 'right',
-    color: colors.mutedText,
+    color: StreetColors.text.muted,
     fontSize: 12,
-    marginTop: spacing.xs,
+    marginTop: 8,
   },
 });

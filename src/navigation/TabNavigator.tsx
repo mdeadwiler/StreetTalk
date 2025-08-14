@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
 import { TabParamList } from '../types';
-import { colors } from '../styles/theme';
+import { StreetColors } from '../styles/streetStyles';
 
 // Screens
 import HomeScreen from '../screens/feed/HomeScreen';
@@ -14,7 +14,7 @@ const Tab = createBottomTabNavigator<TabParamList>();
 // Simple text-based tab icons for now (can be replaced with icon library later)
 const TabIcon = ({ label, focused }: { label: string; focused: boolean }) => (
   <Text style={{ 
-    color: focused ? colors.primary : colors.mutedText, 
+    color: focused ? StreetColors.brand.primary : StreetColors.text.muted, 
     fontSize: 10,
     fontWeight: focused ? 'bold' : 'normal'
   }}>
@@ -28,15 +28,15 @@ export const TabNavigator = () => {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.borderColor,
+          backgroundColor: StreetColors.background.primary,
+          borderTopColor: StreetColors.border.light,
           borderTopWidth: 1,
           paddingBottom: 8,
           paddingTop: 8,
           height: 70,
         },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedText,
+        tabBarActiveTintColor: StreetColors.brand.primary,
+        tabBarInactiveTintColor: StreetColors.text.muted,
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',

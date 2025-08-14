@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types';
-import { colors, spacing } from '../../styles/theme';
+import { StreetColors } from '../../styles/streetStyles';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -115,75 +115,75 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: StreetColors.background.primary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: spacing.lg,
+    paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderColor,
+    borderBottomColor: StreetColors.border.light,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.primary,
+    color: StreetColors.brand.primary,
   },
   content: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   section: {
-    marginBottom: spacing.xl,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.md,
+    color: StreetColors.text.primary,
+    marginBottom: 16,
   },
   accountInfo: {
-    marginBottom: spacing.md,
+    marginBottom: 16,
   },
   label: {
     fontSize: 14,
-    color: colors.mutedText,
+    color: StreetColors.text.muted,
     marginBottom: 4,
   },
   value: {
     fontSize: 16,
-    color: colors.text,
+    color: StreetColors.text.primary,
     fontWeight: '500',
   },
   settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderColor,
+    borderBottomColor: StreetColors.border.light,
   },
   settingText: {
     fontSize: 16,
-    color: colors.text,
+    color: StreetColors.text.primary,
   },
   arrow: {
     fontSize: 16,
-    color: colors.mutedText,
+    color: StreetColors.text.muted,
   },
   logoutButton: {
     backgroundColor: '#ff4444',
-    padding: spacing.md,
+    padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: spacing.lg,
+    marginTop: 20,
   },
   logoutText: {
-    color: colors.text,
+    color: StreetColors.background.primary,
     fontSize: 18,
     fontWeight: 'bold',
   },

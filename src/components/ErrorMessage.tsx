@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors, spacing } from '../styles/theme';
+import { StreetColors } from '../styles/streetStyles';
 import { AppError, shouldShowRetry } from '../utils/errorHandling';
 
 interface ErrorMessageProps {
@@ -29,29 +29,29 @@ export default function ErrorMessage({ error, onRetry, style }: ErrorMessageProp
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fee',
-    borderColor: '#fcc',
+    backgroundColor: '#fef2f2',
+    borderColor: '#fecaca',
     borderWidth: 1,
     borderRadius: 8,
-    padding: spacing.md,
-    marginVertical: spacing.sm,
+    padding: 16,
+    marginVertical: 8,
   },
   message: {
-    color: '#c33',
+    color: '#dc2626',
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   retryButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: StreetColors.brand.primary,
     borderRadius: 6,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     alignSelf: 'center',
-    marginTop: spacing.xs,
+    marginTop: 4,
   },
   retryButtonText: {
-    color: 'white',
+    color: StreetColors.background.primary,
     fontSize: 14,
     fontWeight: '500',
   },

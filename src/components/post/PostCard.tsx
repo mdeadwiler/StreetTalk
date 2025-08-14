@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, Image } from 'react-native';
+import { View, Text, Pressable, Alert, Image, StyleSheet, Dimensions } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { Post } from '../../types';
-import { colors, spacing } from '../../styles/theme';
 import { formatTimestamp, deletePost } from '../../services/firestore';
 import BlockUserButton from '../BlockUserButton';
 import ReportButton from '../ReportButton';
-import { StreetStyles } from '../../styles/streetStyles';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 interface PostCardProps {
   post: Post;
@@ -48,22 +48,22 @@ export default function PostCard({ post, onPress, currentUserId, onEdit, onDelet
 
   return (
     <Pressable 
-      style={({ pressed }: { pressed: boolean }) => ({
-        opacity: pressed ? 0.95 : 1,
-      })}
-      className={StreetStyles.postCard}
+      style={({ pressed }: { pressed: boolean }) => [
+        styles.postCard,
+        pressed && styles.postCardPressed
+      ]}
       onPress={onPress}
     >
-      <View className={StreetStyles.postHeader}>
-        <View className="flex-1">
-          <Text className={StreetStyles.postUsername}>@{post.username}</Text>
-          <Text className={StreetStyles.postTimestamp}>{formatTimestamp(post.createdAt)}</Text>
+      <View style={styles.postHeader}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.postUsername}>@{post.username}</Text>
+          <Text style={styles.postTimestamp}>{formatTimestamp(post.createdAt)}</Text>
         </View>
         
-        <View className="flex-row items-center space-x-2">
+        <View style={styles.headerRight}>
           {/* Block User Button and Report Button (for non-owners) */}
           {!isOwner && (
-            <View className="flex-row items-center space-x-2">
+            <View style={styles.actionButtons}>
               <ReportButton 
                 targetType="post"
                 targetId={post.id}
@@ -81,24 +81,24 @@ export default function PostCard({ post, onPress, currentUserId, onEdit, onDelet
           
           {/* Owner Actions */}
           {isOwner && (
-            <View className="flex-row items-center space-x-3">
+            <View style={styles.ownerActions}>
               <Pressable 
                 onPress={handleEdit} 
-                style={({ pressed }: { pressed: boolean }) => ({
-                  opacity: pressed ? 0.7 : 1,
-                })}
-                className={StreetStyles.editButton}
+                style={({ pressed }: { pressed: boolean }) => [
+                  styles.editButton,
+                  pressed && styles.editButtonPressed
+                ]}
               >
-                <Text className={StreetStyles.editButtonText}>Edit</Text>
+                <Text style={styles.editButtonText}>Edit</Text>
               </Pressable>
               <Pressable 
                 onPress={handleDelete} 
-                style={({ pressed }: { pressed: boolean }) => ({
-                  opacity: pressed ? 0.7 : 1,
-                })}
-                className={StreetStyles.deleteButton}
+                style={({ pressed }: { pressed: boolean }) => [
+                  styles.deleteButton,
+                  pressed && styles.deleteButtonPressed
+                ]}
               >
-                <Text className={StreetStyles.deleteButtonText}>Delete</Text>
+                <Text style={styles.deleteButtonText}>Delete</Text>
               </Pressable>
             </View>
           )}
@@ -106,24 +106,24 @@ export default function PostCard({ post, onPress, currentUserId, onEdit, onDelet
       </View>
 
       {post.content && (
-        <Text className={StreetStyles.postContent}>
+        <Text style={styles.postContent}>
           {post.content}
         </Text>
       )}
 
       {/* Media Section */}
       {post.mediaUrl && (
-        <View className={StreetStyles.mediaContainer}>
+        <View style={styles.mediaContainer}>
           {post.mediaType === 'image' ? (
             <Image 
               source={{ uri: post.mediaUrl }} 
-              className={StreetStyles.mediaImage}
-              style={{ resizeMode: 'cover' }}
+              style={styles.mediaImage}
+              resizeMode="cover"
             />
           ) : (
             <Video
               source={{ uri: post.mediaUrl }}
-              className={StreetStyles.mediaImage}
+              style={styles.mediaImage}
               useNativeControls
               resizeMode={ResizeMode.CONTAIN}
               shouldPlay={false}
@@ -132,13 +132,13 @@ export default function PostCard({ post, onPress, currentUserId, onEdit, onDelet
         </View>
       )}
 
-      <View className={StreetStyles.postFooter}>
-        <View className={StreetStyles.postStats}>
-          <Text className={StreetStyles.postStat}>💬 {post.commentsCount} comments</Text>
-          <Text className={StreetStyles.postStat}>❤️ {post.likes} likes</Text>
+      <View style={styles.postFooter}>
+        <View style={styles.postStats}>
+          <Text style={styles.postStat}>💬 {post.commentsCount} comments</Text>
+          <Text style={styles.postStat}>❤️ {post.likes} likes</Text>
         </View>
         {post.updatedAt && (
-          <Text className={StreetStyles.caption + " italic"}>Edited</Text>
+          <Text style={styles.editedText}>Edited</Text>
         )}
       </View>
     </Pressable>
@@ -146,90 +146,149 @@ export default function PostCard({ post, onPress, currentUserId, onEdit, onDelet
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 10,
-    padding: spacing.md,
-    marginBottom: spacing.md,
+  postCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.borderColor,
+    borderColor: '#e5e5e5',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  header: {
+  postCardPressed: {
+    backgroundColor: '#fafafa',
+    borderColor: '#a1a1a1',
+    shadowOpacity: 0.15,
+  },
+  postHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
-  userInfo: {
+  headerLeft: {
     flex: 1,
+    marginRight: 12,
   },
-  displayName: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: 2,
-  },
-  timestamp: {
-    fontSize: 12,
-    color: colors.mutedText,
-  },
-  headerActions: {
+  headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  nonOwnerActions: {
+  actionButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 8,
   },
-  actions: {
+  ownerActions: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    alignItems: 'center',
+    gap: 12,
   },
-  actionButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  actionText: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  deleteText: {
-    color: '#ff4444',
-  },
-  content: {
+  postUsername: {
+    color: '#4b0082',
     fontSize: 16,
-    color: colors.text,
-    lineHeight: 22,
-    marginBottom: spacing.sm,
+    fontWeight: '600',
+    lineHeight: 20,
   },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  postTimestamp: {
+    color: '#a1a1a1',
+    fontSize: 14,
+    marginTop: 4,
+    lineHeight: 16,
   },
-  stats: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  statText: {
-    fontSize: 12,
-    color: colors.mutedText,
-  },
-  editedText: {
-    fontSize: 10,
-    color: colors.mutedText,
-    fontStyle: 'italic',
+  postContent: {
+    color: '#171717',
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 16,
   },
   mediaContainer: {
-    marginVertical: spacing.sm,
-    borderRadius: 8,
+    borderRadius: 12,
     overflow: 'hidden',
+    marginBottom: 16,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
   },
-  mediaContent: {
+  mediaImage: {
     width: '100%',
-    height: 200,
+    height: 240,
+    minHeight: 180,
+    maxHeight: 400,
+  },
+  postFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e5e5',
+  },
+  postStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  postStat: {
+    color: '#a1a1a1',
+    fontSize: 14,
+    lineHeight: 16,
+  },
+  editedText: {
+    color: '#a1a1a1',
+    fontSize: 12,
+    fontStyle: 'italic',
+    lineHeight: 14,
+  },
+  editButton: {
+    backgroundColor: '#f3ecff',
+    borderWidth: 1,
+    borderColor: '#d4b3ff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 8,
+    minHeight: 32,
+    minWidth: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editButtonPressed: {
+    backgroundColor: '#ede0ff',
+    borderColor: '#c299ff',
+  },
+  editButtonText: {
+    color: '#6b2c91',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  deleteButton: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    minHeight: 32,
+    minWidth: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButtonPressed: {
+    backgroundColor: '#fee2e2',
+    borderColor: '#f87171',
+  },
+  deleteButtonText: {
+    color: '#dc2626',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, RefreshControl, Alert, FlatList } from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, Alert, FlatList, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList, Post } from '../../types';
 import { getPaginatedPosts } from '../../services/firestore';
-import { colors, spacing } from '../../styles/theme';
 import PostCard from '../../components/post/PostCard';
 import { logError } from '../../utils/errorHandling';
 import ErrorMessage from '../../components/ErrorMessage';
-import { StreetStyles } from '../../styles/streetStyles';
+import { StreetColors } from '../../styles/streetStyles';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -109,26 +108,26 @@ export default function HomeScreen() {
   };
 
   return (
-    <View className={StreetStyles.screen}>
+    <View style={styles.screen}>
       {/* Header */}
-      <View className={StreetStyles.header}>
-        <View className="flex-row justify-between items-center">
-          <Text className={StreetStyles.headerTitle}>StreetTalk</Text>
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>StreetTalk</Text>
           <Pressable 
-            style={({ pressed }: { pressed: boolean }) => ({
-              opacity: pressed ? 0.7 : 1,
-            })}
-            className={StreetStyles.buttonSecondary}
+            style={({ pressed }: { pressed: boolean }) => [
+              styles.logoutButton,
+              { opacity: pressed ? 0.7 : 1 }
+            ]}
             onPress={handleLogout}
           >
-            <Text className={StreetStyles.deleteButtonText}>Logout</Text>
+            <Text style={styles.logoutButtonText}>Logout</Text>
           </Pressable>
         </View>
       </View>
 
       {/* Main Feed */}
       <FlatList
-        className={StreetStyles.container}
+        style={styles.container}
         data={posts}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
@@ -140,33 +139,33 @@ export default function HomeScreen() {
         ListHeaderComponent={() => (
           <View>
             <View style={styles.welcomeSection}>
-              <Text style={styles.welcomeText}>Welcome to Street Talk</Text>
-              <Text style={styles.userEmailText}>@{userProfile?.username}</Text>
+              <Text style={styles.welcomeTitle}>Welcome to Street Talk</Text>
+              <Text style={styles.welcomeUsername}>@{userProfile?.username}</Text>
             </View>
             {error && (
               <ErrorMessage 
                 error={error} 
                 onRetry={() => loadPosts()} 
-                style={{ marginHorizontal: spacing.lg, marginBottom: spacing.md }}
+                style={styles.errorMessage}
               />
             )}
           </View>
         )}
         ListEmptyComponent={() => (
           loading ? (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading posts...</Text>
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>Loading posts...</Text>
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No posts yet. Be the first to post!</Text>
+              <Text style={styles.emptyStateText}>No posts yet. Be the first to post!</Text>
             </View>
           )
         )}
         ListFooterComponent={() => (
           loadingMore ? (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading more posts...</Text>
+            <View style={styles.loadingMore}>
+              <Text style={styles.loadingMoreText}>Loading more posts...</Text>
             </View>
           ) : null
         )}
@@ -183,111 +182,132 @@ export default function HomeScreen() {
 
       {/* Create Post Button */}
       <Pressable 
-        style={({ pressed }: { pressed: boolean }) => ([
+        style={({ pressed }: { pressed: boolean }) => [
           styles.createPostButton,
-          { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] }
-        ])}
+          {
+            opacity: pressed ? 0.8 : 1,
+            transform: [{ scale: pressed ? 0.95 : 1 }]
+          }
+        ]}
         onPress={handleCreatePost}
       >
-        <Text style={styles.createPostText}>+</Text>
+        <Text style={styles.createPostButtonText}>+</Text>
       </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: StreetColors.background.primary,
   },
   header: {
+    backgroundColor: StreetColors.background.primary,
+    paddingTop: 48,
+    paddingBottom: 16,
+    paddingHorizontal: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: StreetColors.border.light,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: 60,
-    paddingBottom: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderColor,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.primary,
+    color: StreetColors.text.primary,
   },
   logoutButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 5,
+    backgroundColor: StreetColors.background.tertiary,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: StreetColors.border.light,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  logoutText: {
-    color: colors.primary,
+  logoutButtonText: {
+    color: '#dc2626',
     fontSize: 14,
     fontWeight: '500',
   },
-  feedContainer: {
+  container: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
   },
   welcomeSection: {
-    paddingVertical: spacing.lg,
+    paddingVertical: 24,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderColor,
-    marginBottom: spacing.lg,
+    borderBottomColor: StreetColors.border.light,
+    marginBottom: 24,
   },
-  welcomeText: {
-    fontSize: 18,
+  welcomeTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: colors.text,
+    color: StreetColors.text.primary,
     marginBottom: 8,
+    textAlign: 'center',
   },
-  userEmailText: {
-    fontSize: 12,
-    color: colors.mutedText,
+  welcomeUsername: {
+    fontSize: 14,
+    color: StreetColors.text.secondary,
+    textAlign: 'center',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  loadingText: {
-    color: colors.mutedText,
-    fontSize: 16,
+  errorMessage: {
+    marginHorizontal: 0,
+    marginBottom: 16,
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 40,
+    paddingHorizontal: 20,
   },
-  emptyText: {
-    color: colors.mutedText,
+  emptyStateText: {
+    color: StreetColors.text.secondary,
     fontSize: 16,
     textAlign: 'center',
+    lineHeight: 24,
+  },
+  loadingMore: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingMoreText: {
+    color: StreetColors.text.secondary,
+    fontSize: 16,
   },
   createPostButton: {
     position: 'absolute',
     bottom: 30,
-    right: spacing.lg,
-    backgroundColor: colors.primary,
+    right: 24,
+    backgroundColor: '#34D399',
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
   },
-  createPostText: {
-    color: colors.text,
+  createPostButtonText: {
+    color: '#ffffff',
     fontSize: 24,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
+
+

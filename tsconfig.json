@@ -5,13 +5,6 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "types": ["nativewind/types"]
-  },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "nativewind-env.d.ts",
-    "tailwind.config.ts"
-  ]
+    "resolveJsonModule": true
+  }
 }

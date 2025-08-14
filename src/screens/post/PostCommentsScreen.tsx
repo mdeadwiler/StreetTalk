@@ -22,7 +22,7 @@ import {
   formatTimestamp 
 } from '../../services/firestore';
 import { validateCreatePostForm, getZodErrorMessage } from '../../utils/zod';
-import { colors, spacing } from '../../styles/theme';
+import { StreetColors } from '../../styles/streetStyles';
 import PostCard from '../../components/post/PostCard';
 import { withRateLimit } from '../../utils/rateLimiting';
 import BlockUserButton from '../../components/BlockUserButton';
@@ -346,7 +346,7 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
         <TextInput
           style={styles.commentInput}
           placeholder="Write a comment..."
-          placeholderTextColor={colors.mutedText}
+          placeholderTextColor={StreetColors.text.muted}
           value={newComment}
           onChangeText={setNewComment}
           multiline
@@ -356,7 +356,7 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
         <View style={styles.inputFooter}>
           <Text style={[
             styles.characterCounter,
-            { color: isOverLimit ? '#ff4444' : characterCount > 200 ? '#ff8800' : colors.mutedText }
+            { color: isOverLimit ? '#ff4444' : characterCount > 200 ? '#ff8800' : StreetColors.text.muted }
           ]}>
             {characterCount}/250
           </Text>
@@ -379,51 +379,51 @@ export default function PostCommentsScreen({ route, navigation }: PostCommentsSc
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: StreetColors.background.primary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: spacing.md,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderColor,
+    borderBottomColor: StreetColors.border.light,
   },
   backButtonContainer: {
-    padding: spacing.xs,
+    padding: 8,
     borderRadius: 8,
   },
   backButton: {
     fontSize: 16,
-    color: colors.primary,
+    color: StreetColors.brand.primary,
     fontWeight: '500',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.text,
+    color: StreetColors.text.primary,
   },
   content: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20,
   },
   postSection: {
-    paddingVertical: spacing.md,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderColor,
-    marginBottom: spacing.md,
+    borderBottomColor: StreetColors.border.light,
+    marginBottom: 16,
   },
   commentsSection: {
     flex: 1,
-    paddingBottom: spacing.lg,
+    paddingBottom: 20,
   },
   commentsTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: spacing.md,
+    color: StreetColors.text.primary,
+    marginBottom: 16,
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   loadingText: {
-    color: colors.mutedText,
+    color: StreetColors.text.muted,
     fontSize: 16,
   },
   emptyState: {
@@ -440,23 +440,23 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyText: {
-    color: colors.mutedText,
+    color: StreetColors.text.muted,
     fontSize: 16,
     textAlign: 'center',
   },
   commentCard: {
-    backgroundColor: colors.cardBackground,
+    backgroundColor: StreetColors.background.primary,
     borderRadius: 8,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: colors.borderColor,
+    borderColor: StreetColors.border.light,
   },
   commentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: 8,
   },
   commentAuthorSection: {
     flexDirection: 'row',
@@ -466,49 +466,49 @@ const styles = StyleSheet.create({
   commentAuthor: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: colors.primary,
+    color: StreetColors.brand.primary,
   },
   commentTime: {
     fontSize: 12,
-    color: colors.mutedText,
-    marginLeft: spacing.sm,
+    color: StreetColors.text.muted,
+    marginLeft: 12,
   },
   commentContent: {
     fontSize: 14,
-    color: colors.text,
+    color: StreetColors.text.primary,
     lineHeight: 20,
   },
   commentActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 12,
   },
   deleteButton: {
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 12,
     paddingVertical: 4,
-    backgroundColor: colors.mutedText,
+    backgroundColor: StreetColors.text.muted,
     borderRadius: 4,
   },
   deleteButtonText: {
-    color: colors.background,
+    color: StreetColors.background.primary,
     fontSize: 12,
     fontWeight: '500',
   },
   inputSection: {
-    backgroundColor: colors.cardBackground,
+    backgroundColor: StreetColors.background.primary,
     borderTopWidth: 1,
-    borderTopColor: colors.borderColor,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    borderTopColor: StreetColors.border.light,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   commentInput: {
     borderWidth: 1,
-    borderColor: colors.borderColor,
+    borderColor: StreetColors.border.light,
     borderRadius: 8,
-    padding: spacing.md,
+    padding: 16,
     fontSize: 14,
-    color: colors.text,
-    backgroundColor: colors.background,
+    color: StreetColors.text.primary,
+    backgroundColor: StreetColors.background.primary,
     maxHeight: 100,
     minHeight: 40,
   },
@@ -516,26 +516,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.sm,
+    marginTop: 12,
   },
   characterCounter: {
     fontSize: 12,
   },
   submitButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    backgroundColor: StreetColors.brand.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderRadius: 6,
   },
   submitButtonDisabled: {
-    backgroundColor: colors.mutedText,
+    backgroundColor: StreetColors.text.muted,
   },
   submitButtonText: {
-    color: colors.text,
+    color: StreetColors.background.primary,
     fontSize: 14,
     fontWeight: 'bold',
   },
   submitButtonTextDisabled: {
-    color: colors.mutedText,
+    color: StreetColors.text.muted,
   },
 });

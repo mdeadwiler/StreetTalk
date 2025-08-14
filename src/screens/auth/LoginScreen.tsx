@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
-import { View, Text, TextInput, Pressable, Alert, StatusBar } from 'react-native'
+import { View, Text, TextInput, Pressable, Alert, StatusBar, StyleSheet } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useAuth } from '../../context/AuthContext'
 import { RootStackParamList } from '../../types'
+import { StreetColors } from '../../styles/streetStyles'
 
 import { validateLoginForm, getZodErrorMessage, getFirebaseErrorMessage } from '../../utils/zod';
 import { parseError, logError } from '../../utils/errorHandling';
@@ -42,8 +43,8 @@ const navigateToRegister = () => {
 
 
 return (
-    <View className="flex-1 bg-white">
-        <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor={StreetColors.background.primary} />
         
         <KeyboardAwareScrollView 
             contentContainerStyle={{ flexGrow: 1 }}
@@ -53,80 +54,161 @@ return (
             showsVerticalScrollIndicator={false}
         >
             {/* Header Section */}
-            <View className="flex-1 justify-center px-8 py-8">
-            <View className="mb-12">
-                <Text className="text-3xl font-bold text-black text-center mb-3">
-                    StreetTalk
-                </Text>
-                <Text className="text-lg text-gray-600 text-center">
-                    Your voice, uncensored
-                </Text>
-            </View>
-
-            {/* Login Form */}
-            <View className="space-y-6">
-                <View className="space-y-2">
-                    <Text className="text-sm font-medium text-gray-700 mb-2">
-                        Username
+            <View style={styles.content}>
+                <View style={styles.headerSection}>
+                    <Text style={styles.title}>
+                        StreetTalk
                     </Text>
-                    <TextInput
-                        className="bg-white border border-gray-300 rounded-lg px-4 py-4 text-base text-black"
-                        placeholder="Enter your username"
-                        placeholderTextColor="#9CA3AF"
-                        value={username}
-                        onChangeText={setUsername}
-                        autoCapitalize="none"
-                        autoComplete="username"
-                    />
+                    <Text style={styles.subtitle}>
+                        Your voice, uncensored
+                    </Text>
                 </View>
 
-                <View className="space-y-2">
-                    <Text className="text-sm font-medium text-gray-700 mb-2">
-                        Password
-                    </Text>
-                    <TextInput 
-                        className="bg-white border border-gray-300 rounded-lg px-4 py-4 text-base text-black"
-                        placeholder="Enter your password"
-                        placeholderTextColor="#9CA3AF"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry={true}
-                        autoComplete="current-password"
-                    />
-                </View>
+                {/* Login Form */}
+                <View style={styles.form}>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>
+                            Username
+                        </Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter your username"
+                            placeholderTextColor="#9CA3AF"
+                            value={username}
+                            onChangeText={setUsername}
+                            autoCapitalize="none"
+                            autoComplete="username"
+                        />
+                    </View>
 
-                <Pressable 
-                    style={({ pressed }: { pressed: boolean }) => ({
-                        opacity: pressed ? 0.8 : 1,
-                    })}
-                    className="bg-purple-600 rounded-lg py-4 px-6 mt-6"
-                    onPress={handleLogin}
-                >
-                    <Text className="text-white text-base font-semibold text-center">
-                        Sign In
-                    </Text>
-                </Pressable>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>
+                            Password
+                        </Text>
+                        <TextInput 
+                            style={styles.input}
+                            placeholder="Enter your password"
+                            placeholderTextColor="#9CA3AF"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry={true}
+                            autoComplete="current-password"
+                        />
+                    </View>
 
-                <View className="flex-row justify-center pt-6">
-                    <Text className="text-base text-gray-600">
-                        Don't have an account?{' '}
-                    </Text>
                     <Pressable 
-                        style={({ pressed }: { pressed: boolean }) => ({
-                            opacity: pressed ? 0.7 : 1,
-                        })}
-                        className="py-1 px-2"
-                        onPress={navigateToRegister}
+                        style={({ pressed }: { pressed: boolean }) => [
+                            styles.loginButton,
+                            { opacity: pressed ? 0.8 : 1 }
+                        ]}
+                        onPress={handleLogin}
                     >
-                        <Text className="text-purple-600 text-base font-medium">
-                            Sign up
+                        <Text style={styles.loginButtonText}>
+                            Sign In
                         </Text>
                     </Pressable>
+
+                    <View style={styles.signupPrompt}>
+                        <Text style={styles.signupText}>
+                            Don't have an account?{' '}
+                        </Text>
+                        <Pressable 
+                            style={({ pressed }: { pressed: boolean }) => [
+                                styles.signupLink,
+                                { opacity: pressed ? 0.7 : 1 }
+                            ]}
+                            onPress={navigateToRegister}
+                        >
+                            <Text style={styles.signupLinkText}>
+                                Sign up
+                            </Text>
+                        </Pressable>
+                    </View>
                 </View>
             </View>
-        </View>
         </KeyboardAwareScrollView>
     </View>
 )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: StreetColors.background.primary,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 32,
+  },
+  headerSection: {
+    marginBottom: 48,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: StreetColors.text.primary,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: StreetColors.text.secondary,
+    textAlign: 'center',
+  },
+  form: {
+    gap: 24,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: StreetColors.text.secondary,
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: StreetColors.background.primary,
+    borderWidth: 1,
+    borderColor: StreetColors.border.light,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: StreetColors.text.primary,
+  },
+  loginButton: {
+    backgroundColor: StreetColors.brand.primary,
+    borderRadius: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    marginTop: 24,
+  },
+  loginButtonText: {
+    color: StreetColors.background.primary,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  signupPrompt: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingTop: 24,
+  },
+  signupText: {
+    fontSize: 16,
+    color: StreetColors.text.secondary,
+  },
+  signupLink: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  signupLinkText: {
+    color: StreetColors.brand.primary,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+});
 

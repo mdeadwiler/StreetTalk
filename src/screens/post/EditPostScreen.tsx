@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, Pressable, Alert, StatusBar, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import { RootStackParamList } from '../../types';
 import { validateCreatePostForm, getZodErrorMessage } from '../../utils/zod';
-import { styles as authStyles } from '../../styles/theme';
-import { colors } from '../../styles/theme';
+import { StreetColors } from '../../styles/streetStyles';
 import { getPost, updatePost } from '../../services/firestore';
 
 type EditPostScreenProps = NativeStackScreenProps<RootStackParamList, 'EditPost'>;
@@ -94,63 +93,185 @@ export const EditPostScreen = ({ route, navigation }: EditPostScreenProps) => {
 
   if (loading) {
     return (
-      <View style={[authStyles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: colors.text, fontSize: 16 }}>Loading post...</Text>
+      <View style={styles.loadingContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor={StreetColors.background.primary} />
+        <Text style={styles.loadingText}>Loading post...</Text>
       </View>
     );
   }
 
   return (
-    <View style={[authStyles.container, { justifyContent: 'flex-start', paddingTop: 60 }]}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 20 }}>
-        <TouchableOpacity onPress={handleCancel}>
-          <Text style={authStyles.linkText}>Cancel</Text>
-        </TouchableOpacity>
-        <Text style={[authStyles.title, { fontSize: 18 }]}>Edit Post</Text>
-        <TouchableOpacity 
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
+      <StatusBar barStyle="dark-content" backgroundColor={StreetColors.background.primary} />
+      
+      <View style={styles.header}>
+        <Pressable 
+          style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.7 : 1 }]}
+          onPress={handleCancel}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </Pressable>
+        <Text style={styles.headerTitle}>Edit Post</Text>
+        <Pressable 
+          style={({ pressed }) => [
+            styles.headerButton, 
+            { opacity: pressed ? 0.7 : (content.trim().length === 0 || isOverLimit) ? 0.5 : 1 }
+          ]}
           onPress={handleUpdatePost}
           disabled={content.trim().length === 0 || isOverLimit}
         >
           <Text style={[
-            authStyles.linkText,
-            (content.trim().length === 0 || isOverLimit) && { color: colors.mutedText }
+            styles.saveButtonText,
+            (content.trim().length === 0 || isOverLimit) && styles.disabledButtonText
           ]}>Save</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
-      <View style={{ flex: 1, justifyContent: 'flex-start', alignItems: 'center', paddingTop: 40 }}>        
+      <View style={styles.content}>        
         <TextInput
-          style={[authStyles.textArea, { height: 150, width: '100%' }]}
+          style={styles.textInput}
           placeholder="What's happening?"
+          placeholderTextColor={StreetColors.text.muted}
           value={content}
           onChangeText={setContent}
           multiline
           maxLength={250}
           autoFocus
+          textAlignVertical="top"
         />
 
         <Text style={[
-          authStyles.characterCounter,
-          { color: isOverLimit ? '#ff4444' : characterCount > 200 ? '#ff8800' : colors.mutedText }
+          styles.characterCounter,
+          isOverLimit ? styles.overLimitText : 
+          characterCount > 200 ? styles.warningText : 
+          styles.normalCounterText
         ]}>
           {characterCount}/250
         </Text>
 
-        <TouchableOpacity 
+        <Pressable 
+          style={({ pressed }) => [
+            styles.updateButton,
+            { opacity: pressed ? 0.8 : (content.trim().length === 0 || isOverLimit) ? 0.5 : 1 }
+          ]}
           onPress={handleUpdatePost}
           disabled={content.trim().length === 0 || isOverLimit}
-          style={[
-            authStyles.button,
-            { marginTop: 20, paddingVertical: 12 },
-            (content.trim().length === 0 || isOverLimit) && authStyles.buttonDisabled
-          ]}
         >
           <Text style={[
-            authStyles.buttonText,
-            (content.trim().length === 0 || isOverLimit) && authStyles.buttonTextDisabled
+            styles.updateButtonText,
+            (content.trim().length === 0 || isOverLimit) && styles.disabledButtonText
           ]}>Update Post</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: StreetColors.background.primary,
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: StreetColors.background.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: StreetColors.text.primary,
+    textAlign: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 24,
+    backgroundColor: StreetColors.background.primary,
+    borderBottomWidth: 1,
+    borderBottomColor: StreetColors.border.light,
+  },
+  headerButton: {
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: StreetColors.text.primary,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: StreetColors.brand.primary,
+    fontWeight: '500',
+  },
+  saveButtonText: {
+    fontSize: 16,
+    color: StreetColors.brand.primary,
+    fontWeight: '600',
+  },
+  disabledButtonText: {
+    opacity: 0.5,
+  },
+  content: {
+    flex: 1,
+    paddingTop: 40,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  textInput: {
+    width: '100%',
+    minHeight: 120,
+    maxHeight: 200,
+    backgroundColor: StreetColors.background.secondary,
+    borderWidth: 1,
+    borderColor: StreetColors.border.light,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: StreetColors.text.primary,
+    textAlignVertical: 'top',
+  },
+  characterCounter: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  normalCounterText: {
+    color: StreetColors.text.muted,
+  },
+  warningText: {
+    color: '#D97706',
+  },
+  overLimitText: {
+    color: '#DC2626',
+  },
+  updateButton: {
+    width: '100%',
+    backgroundColor: StreetColors.brand.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    marginTop: 24,
+    minHeight: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  updateButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: StreetColors.background.primary,
+    textAlign: 'center',
+  },
+});

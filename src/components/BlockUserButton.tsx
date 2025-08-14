@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, Text, Alert, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { blockUser, unblockUser, isUserBlocked } from '../services/firestore';
-import { colors, spacing } from '../styles/theme';
+import { StreetColors } from '../styles/streetStyles';
 
 interface BlockUserButtonProps {
   targetUserId: string;
@@ -109,24 +109,24 @@ export default function BlockUserButton({
 
 const styles = StyleSheet.create({
   button: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 6,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   compactButton: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
   },
   blockButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: StreetColors.background.primary,
     borderColor: '#FF4444',
   },
   unblockButton: {
-    backgroundColor: 'transparent',
-    borderColor: colors.mutedText,
+    backgroundColor: StreetColors.background.primary,
+    borderColor: StreetColors.text.muted,
   },
   buttonText: {
     fontSize: 14,
@@ -139,6 +139,6 @@ const styles = StyleSheet.create({
     color: '#FF4444',
   },
   unblockText: {
-    color: colors.mutedText,
+    color: StreetColors.text.muted,
   },
 });
